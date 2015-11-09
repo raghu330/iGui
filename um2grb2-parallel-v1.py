@@ -21,6 +21,10 @@ Testing
 #3. Dr. Raghavendra Ashrit (RA)
 #4. Mr. Gopal Raman Iyengar (GRI)
 
+Parallel:
+As for now, we are using multiprocessing to make parallel run on different
+forecast hours. To make more parallel threads on variable, timeIndx level we 
+may need to use OpenMPI-Py. 
 
 Acknowledgments:
 #1. IBM Team @ NCMRWF for installation support on Bhaskara - Shivali & Bangaru
