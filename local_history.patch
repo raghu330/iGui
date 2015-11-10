@@ -1,0 +1,29 @@
+Index: datCnvrsn/iGui/um2grb2-v1.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+--- datCnvrsn/iGui/um2grb2-v1.py	(revision )
++++ datCnvrsn/iGui/um2grb2-v1.py	(revision )
+@@ -38,7 +38,7 @@
+ 
+ References:
+ 1. Iris. v1.8.1 03-Jun-2015. Met Office. UK. https://github.com/SciTools/iris/archive/v1.8.1.tar.gz
+-2. myLog() based on http://mail.python.org/pipermail/python-list/2007-May/438106.html
++2. Class "myLog()" based on http://mail.python.org/pipermail/python-list/2007-May/438106.html
+ 3. Data understanding: /gpfs2/home/umfcst/ShortJobs/Subset-WRF/ncum_subset_24h.sh
+ 
+ Copyright: ESSO-NCMRWF,MoES, 2015.
+@@ -207,9 +207,9 @@
+                     # save the cube in append mode as a grib2 file
+                     outFn = opPath+fname+'_'+str(input1)+'_'+str(int(fcstTm.points)).zfill(2)+'.grib2'
+                     iris.save(regdCube, outFn, append=True)
+-                    ## edit location section in grib2 to point to the right RMC
+-                    # gribapi.grib_set(outFn,'centre','28')
+-                    # os.system('source /gpfs2/home/umtid/test/grb_local_section.sh')
++                    # edit location section in grib2 to point to the right RMC
++                    gribapi.grib_set(outFn,'centre','28')
++                    os.system('source /gpfs2/home/umtid/test/grb_local_section.sh')
+ 
+                 # end for-3 (jj)
+                 cntr += 1
