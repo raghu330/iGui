@@ -39,6 +39,8 @@ Code History:
 3. Sep 11th, 2015: Recasted for 6-hourly ouputs
 4. Nov 05th, 2015: Changed dummy to a string in getVarIdx()
 5. Nov 07th, 2015: Added to iGui project on github
+6. Nov 09th, 2015: Made it parallel by Arul
+7. Nov 10th, 2015: Spawned multiple versions for input..
 
 References:
 1. Iris. v1.8.1 03-Jun-2015. Met Office. UK. https://github.com/SciTools/iris/archive/v1.8.1.tar.gz
@@ -61,7 +63,10 @@ from datetime import datetime
 
 # -- Start coding
 # set-up lut of metadata
-fnames1 = ['umglaa_pd','umglaa_pe']
+print ('\n Enter the file you want to process, choices are pb, pd and pe only')
+input0 = raw_input(" Enter your choice: ").strip()
+# fnames1 = ['umglaa_pb','umglaa_pd','umglaa_pe']
+fnames1 = 'umglaa_'+input0
 
 # create a class for capturing stdin, stdout and stderr
 class myLog():
@@ -98,7 +103,7 @@ sp = [('longitude',numpy.linspace(0,360,1440)),('latitude',numpy.linspace(-90,90
 def getCubeData(umFname):
     """
     This module is meant to read the input file name and location as a
-    string and it returns the path as aa string. An upgraded version uses
+    string and it returns the path as a string. An upgraded version uses
     a GUI to read the file.
     inputs:
     #1. Data directory path
@@ -191,11 +196,11 @@ def regridAnlFcstFiles(arg):
     # call definition to get variable indices
     varIdx, nVars, varLvls, timeIndx = getVarIdx(fname[0:-3],cubes)    
    
-    # open for-loop-3 -- for all the variables in the cube
+    # open for-loop-1 -- for all the variables in the cube
     for ii in range(len(varIdx)):
         stdNm, _, _, _, _, = getDataAttr(cubes[varIdx[ii]])
         print "  Working on variable: %s \n" %stdNm
-        # for loop-3 -- runs through the selected time slices - synop hour
+        # for loop-2 -- runs through the selected time slices - synop hour
         for jj in timeIndx:
             _, fcstTm, _, _, _ = getDataAttr(cubes[varIdx[ii]][jj])
             print "   Working on forecast time: %02dz\n" %fcstTm.points
@@ -248,7 +253,6 @@ def main(nprocesses):
     cmdStr1 = 'mv log1.log '+wrkngDir+fnames[0][0:7]+'stdout_'+str(input1)+'.log'
     os.system(cmdStr1)
     return
-
 
 
 if __name__ == '__main__':
