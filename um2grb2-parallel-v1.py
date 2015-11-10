@@ -62,12 +62,20 @@ from datetime import datetime
 # End of importing business
 
 # -- Start coding
-# set-up lut of metadata
-print ('\n Enter the file you want to process, choices are pb, pd and pe only')
-input0 = raw_input(" Enter your choice: ").strip()
-# fnames1 = ['umglaa_pb','umglaa_pd','umglaa_pe']
-fnames1 = 'umglaa_'+input0
+# get the current date in YYYYMMDD format
+current_date = time.strftime('%Y%m%d')
+print "\n current_date is %s" % current_date
+# start the timer now
+startT = time.time()
 
+# set-up base folders
+wrkngDir = '/gpfs2/home/umtid/test/'
+dataDir = '/gpfs3/home/umfcst/NCUM/fcst/'+current_date+'/00/'
+opPath = '/gpfs2/home/umtid/test/GRIB-parallel/'
+# target grid as 0.25 deg resolution by setting up sample points based on coord
+sp = [('longitude',numpy.linspace(0,360,1440)),('latitude',numpy.linspace(-90,90,721))]
+
+    
 # create a class for capturing stdin, stdout and stderr
 class myLog():
     def __init__(self, logfile):
@@ -84,20 +92,6 @@ class myLog():
         self.stdout.close()
         self.log.close()
 
-sys.stdout = myLog("log1.log")
-
-# ask for input data -- temporarily interactive, cron version to follow
-input1 = raw_input("\n Enter the date you want to process in YYYYMMDD format: ")
-print "\n Your input was %s" %input1
-# start the timer now
-startT = time.time()
-
-# set-up base folders
-wrkngDir = '/gpfs2/home/umtid/test/'
-dataDir = '/gpfs3/home/umfcst/NCUM/fcst/'+str(input1)+'/00/'
-opPath = '/gpfs2/home/umtid/test/GRIB-parallel/'
-# target grid as 0.25 deg resolution by setting up sample points based on coord
-sp = [('longitude',numpy.linspace(0,360,1440)),('latitude',numpy.linspace(-90,90,721))]
 
 # start definition files
 def getCubeData(umFname):
@@ -111,7 +105,7 @@ def getCubeData(umFname):
     returns:
     #1. Iris cube for the corresponding data file
     """
-
+    global dataDir
     cubes = iris.load(dataDir+umFname)
 
     return cubes
@@ -181,15 +175,15 @@ def getDataAttr(tmpCube):
 def regridAnlFcstFiles(arg):
     """
     function : regridAnlFcstFiles
-    Args : fnames, lol
+    Args : fnames, hr
         fnames : common filename
-        lol : forecast hour 
+        hr : forecast hour 
     Output : This function read the data from fieldsfile and do linear regrid to 
              0.25x0.25 resolution and write into grid2 output file per analysis
              /forecast files.
     """
-    fnames, lol = arg 
-    fname = fnames + lol
+    fname, hr = arg 
+    fname = fname + hr
     print "Started Processing the file: %s.. \n" %fname
     # call definition to get cube data
     cubes = getCubeData(fname)
@@ -215,7 +209,7 @@ def regridAnlFcstFiles(arg):
             # get the regridded lat/lons
             stdNm, fcstTm, refTm, lat1, lon1 = getDataAttr(regdCube)
             # save the cube in append mode as a grib2 file
-            outFn = opPath+fname+'_'+str(input1)+'_'+str(int(fcstTm.points)).zfill(2)+'.grib2'
+            outFn = opPath+fname+'_'+current_date+'_'+str(int(fcstTm.points)).zfill(2)+'.grib2'
             iris.save(regdCube, outFn, append=True)
             ## edit location section in grib2 to point to the right RMC
             # gribapi.grib_set(outFn,'centre','28')
@@ -227,41 +221,44 @@ def regridAnlFcstFiles(arg):
     
     print "  Finished converting file: %s into grib2 format for fcst time: %02dz \n" %(fname,fcstTm.points)
     print "  Time taken to convert the file: %8.5f seconds \n" %(time.time()-startT)
-    print " Finished converting file: %s into grib2 format for fcst file: %s \n" %(fname,lol)
+    print " Finished converting file: %s into grib2 format for fcst file: %s \n" %(fname,hr)
 # end of def regridAnlFcstFiles(fname):
 
 # Start the main function
-def main(nprocesses):
+def main(fname):
     """
     Main function calling all the sub-functions
     """
-    # open for-loop-1 -- works on all the files selected in fnames1
-    for fnames in fnames1:                
-        fcst_times = ['000','024','048','072','096','120','144','168','192','216']
-        fcst_filenames = [(fnames, lol) for lol in fcst_times]
-        # create the no of parallel processes
-        pool = mp.Pool(nprocesses)
-        print "Creating %d (non-daemon) workers and jobs in main process." % nprocesses
-        # pass the forecast hours as argument to take one fcst file per process / core to regrid it.
-        results = pool.map(regridAnlFcstFiles, fcst_filenames)      
-        pool.close() 
-        pool.join()
-        # parallel end
-        print " Time taken to convert the all fcst files: %8.5f seconds \n" %(time.time()-startT)
-    # end for-1
-    print "Total time taken to convert %d files was: %8.5f seconds \n" %(len(fnames1),(time.time()-startT))
-    cmdStr1 = 'mv log1.log '+wrkngDir+fnames[0][0:7]+'stdout_'+str(input1)+'.log'
+    
+    logfile = "log_%s.log" % fname
+    sys.stdout = myLog(logfile)      
+    
+    
+    fcst_times = ['000','024','048','072','096','120','144','168','192','216']
+    fcst_filenames = [(fname, hr) for hr in fcst_times]
+    nprocesses = len(fcst_times)
+    # create the no of parallel processes
+    pool = mp.Pool(nprocesses)
+    print "Creating %d (non-daemon) workers and jobs in main process." % nprocesses
+    # pass the forecast hours as argument to take one fcst file per process / core to regrid it.
+    results = pool.map(regridAnlFcstFiles, fcst_filenames)      
+    pool.close() 
+    pool.join()
+    # parallel end
+    print " Time taken to convert the all fcst files: %8.5f seconds \n" %(time.time()-startT)
+     
+    cmdStr1 = 'mv  ' + logfile +' '+wrkngDir+fname+'_stdout_'+current_date+'.log'
     os.system(cmdStr1)
     return
 
 
 if __name__ == '__main__':
     
-    nprocesses = int(raw_input('Enter the no of processors : '))
-    cc = mp.cpu_count()
-    if nprocesses > cc:
-        raise ValueError("The given no of processes %d exceeds the available processes %d" % (nprocesses, cc))
-    main(nprocesses)
+        
+    
+    fnames1 = ['umglaa_pb', 'umglaa_pd','umglaa_pe']
+    for fname in fnames1:    
+        main(fname)
     
 
 # -- End code
