@@ -8,4 +8,4 @@
 #BSUB -e errors.%J.hybrid     # error file name in which %J is replaced by the job ID
 #BSUB -o output.%J.hybrid     # output file name in which %J is replaced by the job ID
  
-mpirun.lsf /gpfs2/home/raghav/Iris/datCnvrsn/iGui/um2grb2_parallel_v2.py
+/gpfs2/home/umtid/Pythons/Python-2.7.9/bin/python /gpfs2/home/raghav/Iris/datCnvrsn/iGui/um2grb2_parallel_v3.py
