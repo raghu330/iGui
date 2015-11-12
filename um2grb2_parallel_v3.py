@@ -22,8 +22,8 @@ of differnt input files will be append to same 6 hourly grib2 outfiles.
 
 Contributors:
 #1. Mr. Raghavendra S. Mupparthy (MNRS)
-#2. Dr. Devjyoti Dutta (DJ)
-#3. Mr. Arulalan T (AAT)
+#2. Mr. Arulalan T (AAT)
+#3. Dr. Devjyoti Dutta (DJ)
 #4. Dr. Jayakumar A. (JA)
 
 Testing

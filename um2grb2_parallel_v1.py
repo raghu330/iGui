@@ -11,9 +11,10 @@ This code conforms to pep8 standards.
 
 Contributors:
 #1. Mr. Raghavendra S. Mupparthy (MNRS)
-#2. Dr. Devjyoti Dutta (DJ)
-#3. Mr. Arulalan T (AAT)
+#2. Mr. Arulalan T (AAT)
+#3. Dr. Devjyoti Dutta (DJ)
 #4. Dr. Jayakumar A. (JA)
+#5. Dr. Saji Mohandas (SM)
 
 Testing
 #1. Mr. Kuldeep Sharma (KS)
@@ -40,7 +41,7 @@ Code History:
 4. Nov 05th, 2015: Changed dummy to a string in getVarIdx()
 5. Nov 07th, 2015: Added to iGui project on github
 6. Nov 09th, 2015: Made it parallel by Arul
-7. Nov 10th, 2015: Spawned multiple versions for input..
+7. Nov 10th, 2015: Spawned multiple versions for input
 
 References:
 1. Iris. v1.8.1 03-Jun-2015. Met Office. UK. https://github.com/SciTools/iris/archive/v1.8.1.tar.gz

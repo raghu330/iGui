@@ -11,9 +11,10 @@ This code conforms to pep8 standards.
 
 Contributors:
 #1. Mr. Raghavendra S. Mupparthy (MNRS)
-#2. Dr. Devjyoti Dutta (DJ)
-#3. Mr. Arulalan T (AAT)
+#2. Mr. Arulalan T (AAT)
+#3. Dr. Devjyoti Dutta (DJ)
 #4. Dr. Jayakumar A. (JA)
+#5. Dr. Saji MOhandas (SM)
 
 Testing
 #1. Mr. Kuldeep Sharma (KS)
@@ -46,29 +47,29 @@ Code History:
 References:
 1. Iris. v1.8.1 03-Jun-2015. Met Office. UK. https://github.com/SciTools/iris/archive/v1.8.1.tar.gz
 2. myLog() based on http://mail.python.org/pipermail/python-list/2007-May/438106.html
-3. Data understanding: /gpfs2/home/umfcst/ShortJobs/Subset-WRF/ncum_subset_24h.sh
+3. MyPool() based on http://stackoverflow.com/questions/6974695/python-process-pool-non-daemonic
+4. Data understanding: /gpfs2/home/umfcst/ShortJobs/Subset-WRF/ncum_subset_24h.sh
 
 Copyright: ESSO-NCMRWF,MoES, 2015.
 """
 
 # -- Start importing necessary modules
+# We must import mp.pool explicitly, it is not imported by the top-level
+# from the multiprocessing module.
 import os, sys, time
 import numpy, scipy
 import iris
 import gribapi
 import netCDF4
+import types
 import iris.unit as unit
 import multiprocessing as mp
-# We must import this explicitly, it is not imported by the top-level
-# multiprocessing module.
 import multiprocessing.pool as mppool
-import types
 
 from datetime import datetime
 # End of importing business
 
 # -- Start coding
-
 # create a class for capturing stdin, stdout and stderr
 class myLog():
     def __init__(self, logfile):
@@ -192,7 +193,7 @@ def regridAnlFcstFiles(arg):
     """
     fnames, hr = arg 
     fname = fnames + hr
-    print "Started Processing the file: %s.. \n" %fname
+    print "-Started Processing the file: %s.. \n" %fname
     # call definition to get cube data
     cubes = getCubeData(fname)
     # call definition to get variable indices
@@ -201,19 +202,19 @@ def regridAnlFcstFiles(arg):
     # open for-loop-3 -- for all the variables in the cube
     for ii in range(len(varIdx)):
         stdNm, _, _, _, _, = getDataAttr(cubes[varIdx[ii]])
-        print "  Working on variable: %s \n" %stdNm
+        print "--Working on variable: %s \n" %stdNm
         for jj in timeIndx:
             # parallel loop-3 -- runs through the selected time slices - synop hours            
             # create the no of child parallel processes
             _, fcstTm, _, _, _ = getDataAttr(cubes[varIdx[ii]][jj])
-            print "   Working on forecast time: %02dz\n" %fcstTm.points
+            print "---Working on forecast time: %02dz\n" %fcstTm.points
             # grab the variable which is f(t,z,y,x)
             # tmpCube corresponds to each variable for the SYNOP hours
             tmpCube = cubes[varIdx[ii]][jj]
             # get original lats and lons
             _, _, _, lat0, lon0 = getDataAttr(tmpCube)
             # interpolate it 0,25 deg resolution by setting up sample points based on coord
-            print "    Regridding data to 0.25x0.25 deg spatial resolution \n"            
+            print "----Regridding data to 0.25x0.25 deg spatial resolution \n"
             regdCube = tmpCube.interpolate(sp,iris.analysis.Linear())
             # get the regridded lat/lons
             stdNm, fcstTm, refTm, lat1, lon1 = getDataAttr(regdCube)
@@ -229,8 +230,8 @@ def regridAnlFcstFiles(arg):
     del cubes
     
 #    print "  Finished converting file: %s into grib2 format for fcst time: %02dz \n" %(fname,fcstTm.points)
-    print "  Time taken to convert the file: %8.5f seconds \n" %(time.time()-startT)
-    print " Finished converting file: %s into grib2 format for fcst file: %s \n" %(fname,hr)
+    print "--Time taken to convert the file: %8.5f seconds \n" %(time.time()-startT)
+    print "-Finished converting file: %s into grib2 format for fcst file: %s \n" %(fname,hr)
 # end of def regridAnlFcstFiles(fname):
 
 
@@ -240,7 +241,7 @@ def doConvert(fname):
     nchild = len(fcst_times)
     # create the no of child parallel processes
     inner_pool = mp.Pool(processes=nchild)
-    print "Creating %i (daemon) workers and jobs in child." % nchild
+    print "----Creating %i (daemon) workers and jobs in child." % nchild
     
     # pass the forecast hours as argument to take one fcst file per process / core to regrid it.
     results = inner_pool.map(regridAnlFcstFiles, fcst_filenames)
@@ -248,7 +249,7 @@ def doConvert(fname):
     inner_pool.close() 
     inner_pool.join()
     # parallel end
-    print " Time taken to convert the all fcst files: %8.5f seconds \n" %(time.time()-startT)
+    print "-Time taken to convert the all fcst files: %8.5f seconds \n" %(time.time()-startT)
 # end def doConvert(fname):
     
 
@@ -261,7 +262,7 @@ def main(fnames1):
     nprocesses = len(fnames1)
     # lets create no of parallel process w.r.t no of files.
     pool = MyPool(nprocesses)
-    print "Creating %d (non-daemon) workers and jobs in main process." % nprocesses
+    print "---Creating %d (non-daemon) workers and jobs in main process." % nprocesses
     results = pool.map(doConvert, fnames1)
     # closing and joining master pools         
     pool.close()     
@@ -278,7 +279,7 @@ def main(fnames1):
 if __name__ == '__main__':
     
     # filenames partial name
-    fnames1 = ['umglaa_pb', 'umglaa_pd','umglaa_pe']
+    fnames1 = ['umglaa_pb','umglaa_pd','umglaa_pe']
     
     # get the current date in YYYYMMDD format
     current_date = time.strftime('%Y%m%d')
