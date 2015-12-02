@@ -4,58 +4,73 @@ __author__ = 'raghav, arulalant'
 
 """
 What does this code piece do?
-This code converts 6-hourly UM fields file data into grib2 format
-after regridding the data to 0.25x0.25 degree spatial resolution.
-This is just test code as of now and is meant for a specific purpose only
-This code conforms to pep8 standards.
+This code converts 6-hourly UM fields file data into grib2 format after
+regridding the data to 0.25x0.25 degree spatial resolution by imbibing
+analysis fields from the yesterday's 18Z time (based on Dr. SM).
+
+Output:
+This script produce output files as multiple 6 hourly forecasts data from
+different input files such as pd, pd, pe, etc., So all 6 hourly forecasts data
+of different input files will be append to same 6 hourly grib2 outfiles (These
+conventions are according to NCUM only!)
 
 Parallel:
 As for now, we are using multiprocessing to make parallel run on different files
 like pb, pd, pe and its creating child porcess with respect to no of forecast
-hours. To make more parallel threads on variable, timeIndx level we 
-may need to use OpenMPI-Py. 
+hours. To make more parallel threads on variable, timeIndx level we may need to
+use OpenMPI-Py.
 
-Output:
-This script produce output files as multiple 6 hourly forecasts data from 
-different input files such as pd, pd, pe, etc., So all 6 hourly forecasts data 
-of differnt input files will be append to same 6 hourly grib2 outfiles.
+Disclaimers (if any!)
+This is just test code as of now and is meant for a specific purpose only!
 
-Contributors:
-#1. Mr. Raghavendra S. Mupparthy (MNRS)
-#2. Dr. Devjyoti Dutta (DJ)
-#3. Mr. Arulalan T (AAT)
-#4. Dr. Jayakumar A. (JA)
+Standards:
+This code conforms to pep8 standards and KISS philosophy.
 
-Testing
-#1. Mr. Kuldeep Sharma (KS)
-#2. Mr. Raghavendra S. Mupparthy (MNRS)
-#3. Dr. Raghavendra Ashrit (RA)
-#4. Mr. Gopal Raman Iyengar (GRI)
+Contributors & their roles:
+#1. Mr. Raghavendra S. Mupparthy (MNRS) - Integrator, TIAV Lead, I/C, overseer & code humor!
+#2. Mr. Arulalan T (AAT) - Chief coder, optimiser, parelleliser and THE shebang!
+#3. Dr. Devjyoti Dutta (DJ) - ECMWF-GRIB2 Metadata manipulator
+#4. Dr. Saji Mohandas (SM) - TIFF lead/expertise and shell-template.
+
+Testing & their roles:
+#1. Mr. Kuldeep Sharma (KS) - Main tester for visual integrety vis-a-vis GrADS
+#2. Mr. Raghavendra S. Mupparthy (MNRS) - Implementor
+#3. Dr. Raghavendra Ashrit (RA) - Testing for RIMES and overall integrity testing
+#4. Dr. Jayakumar A. (JA) - Comparison with the CAWCR convertor and specifictions needs
+#5. Dr. Saji Mohandad (SM) - Control test (GrADS & subset.tcl) & Future Functional Description
+#6. Mr. Gopal Raman Iyengar (GRI) - Overseer
 
 Acknowledgments:
-#1. IBM Team @ NCMRWF for installation support on Bhaskara - Shivali & Bangaru
-#2. Dr. Rakhi R, Dr. Jayakumar A, Dr. Saji Mohandas and Mr. Bangaru for N768
+#1. Dr. Rakhi R, Dr. Jayakumar A, Dr. Saji Mohandas and Mr. Bangaru (Ex-IBM) for N768.
+#2. IBM Team @ NCMRWF for installation support on Bhaskara - Ms. Shivali & Mr. Bangaru (Ex-IBM)
 
 Code History:
-1. Jul 22nd, 2015: First version by MNRS
-2. Jul 24th, 2015: Grib section editor - version-0.1,
-                 : Automation of filenames started
-                 : Extraction of required variables
-                 : Interpolation scheme to 0.25 degree
-3. Sep 11th, 2015: Recasted for 6-hourly ouputs
-4. Nov 05th, 2015: Changed fname to a string in getVarIdx()
-5. Nov 07th, 2015: Added to iGui project on github
-6. Nov 09th, 2015: Made it parallel (by AAT)
-7. Nov 10th, 2015: Spawned multiple versions for input..
-8. Nov 12th, 2015: Appending same 6 hourly forecast data of differnt input 
-                   files into same 6hourly grib2 files. (by AAT)
+1.  Jul 22nd, 2015: First version by MNRS
+2.  Jul 24th, 2015: Grib section editor - version-0.1,
+                  : Automation of filenames started
+                  : Extraction of required variables
+                  : Interpolation scheme to 0.25 degree (MNRS & DJ)
+3.  Sep 11th, 2015: Recasted for 6-hourly ouputs (MNRS)
+4.  Nov 05th, 2015: Changed fname to a string in getVarIdx() (MNRS)
+5.  Nov 07th, 2015: Added to iGui project on github from fcm project (MNRS & AAT)
+6.  Nov 09th, 2015: parallelization!!! (AAT)
+7.  Nov 10th, 2015: Spawned multiple versions for input (AAT & MNRS)
+8.  Nov 12th, 2015: Appending same 6 hourly forecast data of different input
+                    files into same 6 hourly grib2 files. (AAT)
+9.  Nov 16th, 2015: Added new module/functionality "cubeAverager" to account
+                    for two kinds of fields: accumulated or instantaneous (AAT)
+10. Dec 02nd, 2015: Added module to create analysis fields from crtAnal.py (MNRS)
+                    Corrected for typos (MNRS)
 
 References:
 1. Iris. v1.8.1 03-Jun-2015. Met Office. UK. https://github.com/SciTools/iris/archive/v1.8.1.tar.gz
 2. myLog() based on http://mail.python.org/pipermail/python-list/2007-May/438106.html
 3. Data understanding: /gpfs2/home/umfcst/ShortJobs/Subset-WRF/ncum_subset_24h.sh
+4. Saji M. (2014), "Utility to convert UM fieldsfile output to NCEP GRIB1 format:
+                    A User Guide", NMRF/TR/01/2014, April 2014, pp. 51, available at
+                    http://www.ncmrwf.gov.in/umfld2grib.pdf
 
-Copyright: ESSO-NCMRWF,MoES, 2015.
+Copyright: ESSO-NCMRWF,MoES, 2015-2016.
 """
 
 # -- Start importing necessary modules
@@ -66,18 +81,18 @@ import gribapi
 import netCDF4
 import iris.unit as unit
 import multiprocessing as mp
-# We must import this explicitly, it is not imported by the top-level
-# multiprocessing module.
-import multiprocessing.pool as mppool
+import multiprocessing.pool as mppool       # We must import this explicitly, it is not imported by the top-level multiprocessing                                                 module.
 import types
 
 from datetime import datetime
 # End of importing business
 
 # -- Start coding
-
-# create a class for capturing stdin, stdout and stderr
+# create a class #1 for capturing stdin, stdout and stderr
 class myLog():
+    """
+    A simple class with destructor and construtor for logging the standatd I/O
+    """
     def __init__(self, logfile):
         self.stdout = sys.stdout
         self.flush = sys.stdout.flush
@@ -91,55 +106,57 @@ class myLog():
     def close(self):
         self.stdout.close()
         self.log.close()
+# end of class #1
 
-# start definition files
+## Start definition files
+# start definition #1
 def getCubeData(umFname):
     """
-    This module is meant to read the input file name and location as a
-    string and it returns the path as aa string. An upgraded version uses
-    a GUI to read the file.
-    inputs:
-    #1. Data directory path
-    #2. UM fieldsfile filename
-    returns:
-    #1. Iris cube for the corresponding data file
+    This definition module reads the input file name and its location as a
+    string and it returns the data as an Iris Cube.
+    An upgraded version uses a GUI to read the file.
+
+    :param umFname: UM fieldsfile filename passed as a string
+    :return: Data for corresponding data file in Iris cube format
     """
 
     cubes = iris.load(dataDir+umFname)
     
     return cubes
-# end of definition-1
+# end of definition #1
 
+# start definition #2
 def getVarIdx(fname,cube):
     """
-    This module gets the required variables from the passed cube as per the
-    WRF-Variables.txt file. (matches the contents of pgp06prepDDMMYY)
-    inputs:
-    1. fname : file name 
-    2. cube 
-    returns:
-    1. The cube index
-    2. Number of variables
-    3. Number of levels
-    4. Time slices or Index
+    This definition module gets the required variables from the passed
+    cube as per the WRF-Variables.txt file.
+    (matches the contents of pgp06prepDDMMYY)
+    - Improvements & Edits by AAT & MNRS
+    :param fname: filename of the fieldsfile that has been passed as a string.
+    :param cube: Data in Iris cube format
+    :return: nVars: Total number of variables in the cube as an integer number
+    :return: varIndx: Cube index indicating the variable as an array
+    :return: varLvls: No. of vertical levels in the cube as an array/scalar - integer (number)
+    :return: timeIndx: Time slices of the cube as an array/scalar - integer (number)
+    :return: do6HourlyMean: Logical expression as either True or False, indicating
+                            whether the field is instantaneous or accumulated
+    Started by MNRS and improved by AAT!
     """
-    
-    
-    nVars = len(cube)    
+    nVars = len(cube)
             
     if fname.startswith('umglaa_pb'):              # umglaa_pb
-#        varIndx = [19, 24, 26, 30, 31, 32, 33, 34] # needed
-        varIndx = [ 24, 26, 30 ] # available 
+        # varIndx = [19, 24, 26, 30, 31, 32, 33, 34] # needed
+        varIndx = [ 24, 26, 30 ] # available for use
         varLvls = 0        
         # the cube contains Instantaneous data at every 3-hours.        
-        # but we need to extract only every 6th hours instantaneous.
+        # but we need to extract every 6th hours instantaneous.
         timeIndx = [1,3,5,7]
         do6HourlyMean = False
         
     elif fname.startswith('umglaa_pd'):            # umglaa_pd
         # consider variable
-#        varIndx = [1,2,3,4,5,6,7] # needed
-        varIndx = [1,2,3,4, 6,7] # available 
+        # varIndx = [1,2,3,4,5,6,7] # needed
+        varIndx = [1,2,3,4, 6,7] # available for use
         varLvls = 18
         # the cube contains Instantaneous data at every 3-hours.
         # but we need to extract only every 6th hours instantaneous.
@@ -151,15 +168,14 @@ def getVarIdx(fname,cube):
         varLvls = 0        
         # the cube contains Instantaneous data at every 1-hours.
         # but we need to extract only every 6th hours instantaneous.
-        do6HourlyMean = False
         timeIndx = [5,11,17,23]
-        
-    elif fname.startswith('umglaa_pf'):            # umglaa_pf
+        do6HourlyMean = False
+
+    elif fname.startswith('umglaa_pf'):             # umglaa_pf
         # other vars (these vars will be created as 6-hourly averaged)
-        varIndx1 = [4, 23, 24, 25, 26, 28, 31, 32, 33, 34, 35, 36]
+        # varIndx = [4, 23, 24, 25, 26, 28, 31, 32, 33, 34, 35, 36]
         # rain and snow vars (these vars will be created as 6-hourly accumutated)
-        varIndx2 = [12, 13, 17, 18, 20, 21]
-        # all vars 
+        varIndx2 = [12, 13, 17, 18, 20, 21]         # all vars
         varIndx = varIndx2 #+ varIndx2
         varLvls = 0        
         # the cube contains data of every 3-hourly average or accumutated.
@@ -171,21 +187,21 @@ def getVarIdx(fname,cube):
         raise ValueError("Filename not implemented yet!")
     # end if-loop
 
-    return varIndx, nVars, varLvls, timeIndx, do6HourlyMean
-# end of definition-2
+    return nVars, varIndx, varLvls, timeIndx, do6HourlyMean
+# end of definition #2
 
+# start definition #3
 def getDataAttr(tmpCube):
     """
-    This module returns basic coordinate info about the data cube.
-    Its input is:
-    #1. temporary cube containing a single geophysical field/parameter
-    Its outputs are:
-    #1. fcstTm -- forecast time period for eg: 00, 06, 12 etc -- units as in hours
-    #2. refTm -- reference time -- units as date  in Gregorian
-    #3. lat as scalar -- units as degree (from 90S to 90N)
-    #4. lon as scalar -- units as degree (from 0E to 360E)
+    This module returns basic coordinate & attribute info about any Iris data cube.
+    :param tmpCube: a temporary Iris cube containing a single geophysical field/parameter
+    :return: stdNm: CF-compliant Standard name of the field/parameter
+    :return: fcstTm: forecast time period for eg: 00, 06, 12 etc -- units as in hours
+    :return: refTm: reference time -- units as date  in Gregorian
+    :return: lat as scalar array (1D) units as degree (from 90S to 90N)
+    :return: lon as scalar array (1D) units as degree (from 0E to 360E)
+    Original by MNRS
     """
-
     stdNm = tmpCube.standard_name
     fcstTm = tmpCube.coord('forecast_period')
     refTm = tmpCube.coord('forecast_reference_time')
@@ -193,25 +209,21 @@ def getDataAttr(tmpCube):
     lon = tmpCube.coord('longitude')
 
     return stdNm, fcstTm, refTm, lat, lon
-# end of definition-3
+# end of definition #3
 
+# start definition #4
 def cubeAverager(tmpCube, action='mean', intervals='hourly'):
     """
-    cubeAverager : This function do average over the time dimensional of the 
-        passed cube.
-    Args :
-        tmpCube : cube data which time dimension length must be more than 1.
-        action  : mean | sum
-        intervals : String to represent in the print statement and add  
-                    comments to the return cube data. 
-                    eg : '1-hourly' / '3-hourly'
-    Returns :
-        return the averaged / accumutated over passed time dimension of cube.
-                    
-    Author : Arulalan.T (AAT)
-    Date : 16-Nov-2015
+    This module was added by AAT to return a data variable depending on the nature of the field.
+    :param tmpCube:     The temporary cube data (in Iris format) with non-singleton time dimension
+    :param action:      mean| sum (accumulated fields are averaged and instantaneous are summed).
+    :param intervals:   A simple string representing represting the time & binning aspect.
+    :return: meanCube:  An Iris formatted cube date containing the resultant data either as
+                        averaged or summed.
+    ACK:
+    Started and initiated by AAT on 11/16/2015 and minor correction & standardization by MNRS on
+    11/29/15.
     """
-       
     meanCube = tmpCube[0]
     tlen = len(tmpCube.coord('time').points)
     for ti in range(1, tlen):
@@ -228,22 +240,27 @@ def cubeAverager(tmpCube, action='mean', intervals='hourly'):
     # get the time coord and set to mean
     timeAxFirst = tmpCube[0].coords('time')[0]
     timeAxLast = tmpCube[-1].coords('time')[0]
+
     # get the bounds and time points from two extremes    
     bounds = [timeAxFirst.bounds[0][0], timeAxLast.bounds[-1][-1]]
     timepoint = [bounds[0] + ((bounds[-1] - bounds[0]) / 2.0)]
-    # update the time coordinate with new time point and time bounds 
+
+    # update the time coordinate with new time point and time bounds
     timeAxFirst.points = timepoint
     timeAxFirst.bounds = bounds
+
     # add the updated time coordinate to the meanCube
     meanCube.add_aux_coord(timeAxFirst)
     
     # get the fcst time coord and set to mean
     fcstAxFirst = tmpCube[0].coords('forecast_period')[0]
     fcstAxLast = tmpCube[-1].coords('forecast_period')[0]
-    # get the bounds and time points from two extremes    
+
+    # get the bounds and time points from two extremes
     bounds = [fcstAxFirst.bounds[0][0], fcstAxLast.bounds[-1][-1]]
     fcstpoint = [bounds[0] + ((bounds[-1] - bounds[0]) / 2.0)]
-    # update the time coordinate with new fcst time point and fcst time bounds 
+
+    # update the time coordinate with new fcst time point and fcst time bounds
     fcstAxFirst.points = fcstpoint
     fcstAxFirst.bounds = bounds
     
@@ -268,38 +285,52 @@ def cubeAverager(tmpCube, action='mean', intervals='hourly'):
                                      comments=intervals+' accumutation')
     # add cell_methods to the meanCube                                     
     meanCube.cell_methods = (cm,)
+
     print meanCube
-    # make memory free 
+
+    # make memory free
     del tmpCube
     
     # return mean cube 
     return meanCube
 # end of def cubeAverager(tmpCube):
 
+# create a class #2 to initiate mp daemon processes
 class NoDaemonProcess(mp.Process):
     # make 'daemon' attribute always return False
+    # A class created by AAT
     def _get_daemon(self):
         return False
     def _set_daemon(self, value):
         pass
     daemon = property(_get_daemon, _set_daemon)
+# end of class #2
 
-# We sub-class multiprocessing.pool.Pool instead of multiprocessing.Pool
-# because the latter is only a wrapper function, not a proper class.
+# create a class #3 to set-up worker-pools
 class MyPool(mppool.Pool):
+    # We sub-class multiprocessing.pool. Pool instead of multiprocessing.Pool
+    # because the latter is only a wrapper function, not a proper class.
     ### http://stackoverflow.com/questions/6974695/python-process-pool-non-daemonic
-    ## refer the above link to invoke child processes
+    ### refer the above link to invoke child processes
+    # A class created by AAT
     Process = NoDaemonProcess
-    
+# end of class #3
+
+# start definition #5
 def regridAnlFcstFiles(arg):
     """
-    function : regridAnlFcstFiles
-    Args : fnames, hr
-        fnames : common filename
-        hr : forecast hour 
-    Output : This function read the data from fieldsfile and do linear regrid to 
-             0.25x0.25 resolution and write into grid2 output file per analysis
-             /forecast files.
+    New Module by AAT:
+    This module has been rewritten entirely by AAT for optimization as an embarassingly-
+    parallel problem! It also checks the std names from Iris cube format with the
+    CF-convention and it regrids the data to 0.25x0.25 regular grid using linear
+    interpolation methods.
+    :param arg: standard arguments:
+            fnames: common filename
+            hr: forecast hour
+    :return: regridded cube saved as GRIB2 file! TANGIBLE!
+    ACK:
+    This module has been entirely revamped & improved by AAT based on an older and
+    serial version by MNRS on 11/16/2015.
     """
     fnames, hr = arg 
     fname = fnames + hr
@@ -310,11 +341,11 @@ def regridAnlFcstFiles(arg):
     # call definition to get cube data
     cubes = getCubeData(fname)
     # call definition to get variable indices
-    varIndecies, nVars, varLvls, timeIndx, do6HourlyMean = getVarIdx(fname[0:-3],cubes)
+    varIndices, nVars, varLvls, timeIndx, do6HourlyMean = getVarIdx(fname[0:-3],cubes)
     accumutationType = ['rain', 'precip', 'snow']
     
     # open for-loop-1 -- for all the variables in the cube
-    for varIdx in varIndecies:
+    for varIdx in varIndices:
         stdNm, _, _, _, _ = getDataAttr(cubes[varIdx])
         print "stdNm", stdNm
         if stdNm is None:
@@ -408,8 +439,16 @@ def regridAnlFcstFiles(arg):
     print " Finished converting file: %s into grib2 format for fcst file: %s \n" %(fname,hr)
 # end of def regridAnlFcstFiles(fname):
 
-
+# Start definition #6
 def doConvert(fname):
+    """
+    New Module by AAT:
+    This module has been rewritten entirely by AAT for optimization as an embarassingly-
+    parallel problem! This module acts as the main program to feed the filenames as a
+    child process to a multiprocessing thread as a daemon process.
+    :param fname: Name of the FF filename in question as a "string"
+    :return: Nothing! TANGIBLE!
+    """
     fcst_times = ['000', '024','048','072','096','120','144','168','192','216']
     fcst_filenames = [(fname, hr) for hr in fcst_times]
     nchild = len(fcst_times)
@@ -425,20 +464,23 @@ def doConvert(fname):
     # parallel end
     print " Time taken to convert the all fcst files: %8.5f seconds \n" %(time.time()-startT)
 # end def doConvert(fname):
-    
 
 # Start the main function
 def main(fnames1):
     """
     Main function calling all the sub-functions
+    :param fnames1: a simple filename as argument in a string format
+    :return: THE SheBang!
     """
     ## get the no of files and 
     nprocesses = len(fnames1)
     # lets create no of parallel process w.r.t no of files.
+
     pool = MyPool(nprocesses)
     print "Creating %d (non-daemon) workers and jobs in main process." % nprocesses
     results = pool.map(doConvert, fnames1)
-    # closing and joining master pools         
+
+    # closing and joining master pools
     pool.close()     
     pool.join()
     # parallel ended
@@ -449,7 +491,7 @@ def main(fnames1):
     return
 # end of def main(fnames1):
 
-
+# feeder!
 if __name__ == '__main__':
     
     # filenames partial name
@@ -478,6 +520,5 @@ if __name__ == '__main__':
     targetGrid = [('longitude',numpy.linspace(0,360,1440)),
                     ('latitude',numpy.linspace(-90,90,721))]
     main(fnames1)
-    
 
 # -- End code

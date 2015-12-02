@@ -211,7 +211,6 @@ def cubeAverager(tmpCube, action='mean', intervals='hourly'):
     Author : Arulalan.T (AAT)
     Date : 16-Nov-2015
     """
-        
        
     meanCube = tmpCube[0]
     tlen = len(tmpCube.coord('time').points)
@@ -382,14 +381,14 @@ def regridAnlFcstFiles(arg):
             except iris.exceptions.TranslationError as e:
                 if str(e) == "The vertical-axis coordinate(s) ('soil_model_level_number') are not recognised or handled.":  
                     regdCube.remove_coord('soil_model_level_number') 
-                    print "Revmoed soil_model_level_number from cube, due to error %s" % str(e)       
+                    print "Removed soil_model_level_number from cube, due to error %s" % str(e)
                     iris.save(regdCube, outFn, append=True)
                 else:
                     print "Got error while saving, %s" % str(e)
                     print " So skipping this without saving data"
                     continue
             except Exception as e:
-                print "Got error while saving, %s" % str(e)
+                print "Error while saving!! %s" % str(e)
                 print " So skipping this without saving data"
                 continue
             # end of try:
