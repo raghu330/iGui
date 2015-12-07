@@ -659,11 +659,8 @@ def main(fnames, ftype):
     # closing and joining master pools
     pool.close()     
     pool.join()
-    # parallel ended
-        
+    # parallel ended        
     print "Total time taken to convert %d files was: %8.5f seconds \n" %(len(fnames),(time.time()-startT))
-    cmdStr1 = 'mv log1.log '+wrkngDir+fnames[0][0:7] + 'stdout_'+ current_date +'.log'
-    os.system(cmdStr1)
     return
 # end of def main(fnames):
 
@@ -705,7 +702,11 @@ def convertFcstFiles(inPath='/gpfs3/home/umfcst/NCUM/fcst/',
                     ('latitude',numpy.linspace(-90,90,721))]
                     
     # do convert for forecast files 
-    main(fcst_fnames, ftype='fcst')        
+    main(fcst_fnames, ftype='fcst')   
+    
+    
+    cmdStr = 'mv log1.log '+wrkngDir+ 'um2grib2_fcst_stdout_'+ current_date +'00.log'
+    os.system(cmdStr)     
 # end of def convertFcstFiles(...):
 
 
@@ -749,6 +750,9 @@ def convertAnlFiles(inPath='/gpfs3/home/umfcst/NCUM/fcst/',
                     
     # do convert for analysis files
     main(anl_fnames, ftype='anl')   
+    
+    cmdStr = 'mv log1.log '+wrkngDir+ 'um2grib2_anl_stdout_'+ current_date +hr+'.log'
+    os.system(cmdStr)  
 # end of def convertAnlFiles(...):
 
 
