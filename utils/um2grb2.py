@@ -3,7 +3,7 @@
 __author__ = 'raghav, arulalant'
 __version__ = 'v5.0'
 __release_version__ = 'v1.0a'
-__release_name__ 'alpha'
+__release_name__ = 'alpha'
 
 """
 What does this code piece do?
