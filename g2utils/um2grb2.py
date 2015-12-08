@@ -639,10 +639,10 @@ def doAnlConvert(fname):
 # end def doAnlConvert(fname):
 
 
-# Start the parallelFilesConversion function
-def parallelFilesConversion(fnames, ftype):
+# Start the convertFilesInParallel function
+def convertFilesInParallel(fnames, ftype):
     """
-    parallelFilesConversion function calling all the sub-functions
+    convertFilesInParallel function calling all the sub-functions
     :param fnames: a simple filename as argument in a string format
     :return: THE SheBang!
     """
@@ -654,7 +654,7 @@ def parallelFilesConversion(fnames, ftype):
     # lets create no of parallel process w.r.t no of files.
 
     pool = _MyPool(nprocesses)
-    print "Creating %d (non-daemon) workers and jobs in parallelFilesConversion process." % nprocesses
+    print "Creating %d (non-daemon) workers and jobs in convertFilesInParallel process." % nprocesses
     
     if ftype in ['anl', 'analysis']:
         print "fnames ++++++++", fnames
@@ -671,7 +671,7 @@ def parallelFilesConversion(fnames, ftype):
     # parallel ended        
     print "Total time taken to convert %d files was: %8.5f seconds \n" %(len(fnames),(time.time()-_startT_))
     return
-# end of def parallelFilesConversion(fnames):
+# end of def convertFilesInParallel(fnames):
 
 
 def convertFcstFiles(inPath, outPath, tmpPath, hr='00'):
@@ -710,7 +710,7 @@ def convertFcstFiles(inPath, outPath, tmpPath, hr='00'):
                     ('latitude',numpy.linspace(-90,90,721))]
                     
     # do convert for forecast files 
-    parallelFilesConversion(fcst_fnames, ftype='fcst')   
+    convertFilesInParallel(fcst_fnames, ftype='fcst')   
     
     
     cmdStr = 'mv log1.log '+_tmpDir_+ 'um2grib2_fcst_stdout_'+ _current_date_ +'00.log'
@@ -756,7 +756,7 @@ def convertAnlFiles(inPath, outPath, tmpPath, hr='00'):
                     ('latitude',numpy.linspace(-90,90,721))]
                     
     # do convert for analysis files
-    parallelFilesConversion(anl_fnames, ftype='anl')   
+    convertFilesInParallel(anl_fnames, ftype='anl')   
     
     cmdStr = 'mv log1.log '+_tmpDir_+ 'um2grib2_anl_stdout_'+ _current_date_ +hr+'.log'
     os.system(cmdStr)  
