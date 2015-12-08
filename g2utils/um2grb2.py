@@ -687,7 +687,7 @@ def convertFcstFiles(inPath, outPath, tmpPath, hr='00'):
     _current_date_ = time.strftime('%Y%m%d')
 #    _current_date_ = '20151206'
     print "\n _current_date_ is %s" % _current_date_
-    sys.stdout = myLog("log1.log")
+    sys.stdout = myLog(os.path.join(_tmpDir_, "log1.log"))
     
     # start the timer now
     _startT_ = time.time()
@@ -713,7 +713,7 @@ def convertFcstFiles(inPath, outPath, tmpPath, hr='00'):
     convertFilesInParallel(fcst_fnames, ftype='fcst')   
     
     
-    cmdStr = 'mv log1.log '+_tmpDir_+ 'um2grib2_fcst_stdout_'+ _current_date_ +'00.log'
+    cmdStr = 'mv '+_tmpDir_+'log1.log  '+_tmpDir_+ 'um2grib2_fcst_stdout_'+ _current_date_ +'00.log'
     os.system(cmdStr)     
 # end of def convertFcstFiles(...):
 
