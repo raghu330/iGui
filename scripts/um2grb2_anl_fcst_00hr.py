@@ -10,9 +10,9 @@ Date : 07.Dec.2015
 """
 
 import os, sys 
-from g2utils.um2grb2 import convertAnlFiles, convertFcstFiles
+#from g2utils.um2grb2 import convertAnlFiles, convertFcstFiles
 # get this script abspath
-scriptPath = os.path.abspath(__file__)
+scriptPath = os.path.dirname(os.path.abspath(__file__))
 print "Reading configure file to load the paths"
 # get the configure lines
 clines = [l.strip() for l in open(os.path.join(scriptPath, 'configure')).readlines() \
@@ -36,8 +36,8 @@ for name, path in [('inPath', inPath), ('outPath', outPath), ('tmpPath', tmpPath
 
 print "Successfully loaded the above paths from configure file!"
 
-## call analysis conversion function w.r.t data assimilated during short forecast hour.
-convertAnlFiles(inPath, outPath, tmpPath, hr='00')
-#    
-## call forecast conversion function w.r.t data assimilated at 00z long forecast hour.
-convertFcstFiles(inPath, outPath, tmpPath, hr='00')
+### call analysis conversion function w.r.t data assimilated during short forecast hour.
+#convertAnlFiles(inPath, outPath, tmpPath, hr='00')
+##    
+### call forecast conversion function w.r.t data assimilated at 00z long forecast hour.
+#convertFcstFiles(inPath, outPath, tmpPath, hr='00')
