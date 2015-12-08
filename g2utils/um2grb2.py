@@ -54,7 +54,7 @@ Code History:
                   : Extraction of required variables
                   : Interpolation scheme to 0.25 degree (MNRS & DJ)
 3.  Sep 11th, 2015: Recasted for 6-hourly ouputs (MNRS)
-4.  Nov 05th, 2015: Changed fname to a string in getVarDetails() (MNRS)
+4.  Nov 05th, 2015: Changed fname to a string in getVarInOutFilesDetails() (MNRS)
 5.  Nov 07th, 2015: Added to iGui project on github from fcm project (MNRS & AAT)
 6.  Nov 09th, 2015: parallelization!!! (AAT)
 7.  Nov 10th, 2015: Spawned multiple versions for input (AAT & MNRS)
@@ -155,13 +155,13 @@ def getYdayStr(today):
 # end of def getYdayStr(today):
 
 # start definition #2
-def getVarDetails(_inDataPath_, fname, hr):
+def getVarInOutFilesDetails(inDataPath, fname, hr):
     """
     This definition module gets the required variables from the passed
     cube as per the WRF-Variables.txt file.
     (matches the contents of pgp06prepDDMMYY)
     - Improvements & Edits by AAT & MNRS
-    :param _inDataPath_: data path which contains data and hour.
+    :param inDataPath: data path which contains data and hour.
     :param fname: filename of the fieldsfile that has been passed as a string.
 
     :return: varIndx: Cube index indicating the variable as an array
@@ -169,8 +169,8 @@ def getVarDetails(_inDataPath_, fname, hr):
     :return: fcstHours: Time slices of the cube as an array/scalar - integer (number)
     :return: do6HourlyMean: Logical expression as either True or False, indicating
                             whether the field is instantaneous or accumulated
-    :return: infile: It returns absolute path of infile by _inDataPath_ and fname.
-                     Also it updates _inDataPath_ yesterday, hour for analysis pf files
+    :return: infile: It returns absolute path of infile by inDataPath and fname.
+                     Also it updates inDataPath yesterday, hour for analysis pf files
     :return: outfile: It returns outfile absolute path with ana or fcst type 
                       along with date and hour.
     Started by MNRS and improved by AAT!
@@ -180,9 +180,9 @@ def getVarDetails(_inDataPath_, fname, hr):
     
     hr = int(hr)
     
-    infile = os.path.join(_inDataPath_, fname)    
+    infile = os.path.join(inDataPath, fname)    
     
-    _inDataPath_Hour = _inDataPath_.split('/')[-1]      
+    inDataPathHour = inDataPath.split('/')[-1]      
     if fname.startswith('umglaa'):
         outfile = 'um_prg' 
     elif fname.startswith(('umglca', 'qwqg00')):
@@ -212,7 +212,7 @@ def getVarDetails(_inDataPath_, fname, hr):
         
     elif fname.startswith('umglca_pd'):            # umglca_pd
         # consider variable
-        if _inDataPath_Hour == '00':
+        if inDataPathHour == '00':
             varIndx = [4] 
             # rest of them (i.e 1,2,3,5,6,7) from taken already from qwqg00 file.
         else:
@@ -226,7 +226,7 @@ def getVarDetails(_inDataPath_, fname, hr):
         do6HourlyMean = False
         
     elif fname.startswith('umglca_pe'):            # umglca_pe
-        if _inDataPath_Hour == '00':
+        if inDataPathHour == '00':
             varIndx = [5,6,7,9,11,14,16]
             # rest of them (i.e 4, 12) from taken already from qwqg00 file.
         else:
@@ -251,7 +251,7 @@ def getVarDetails(_inDataPath_, fname, hr):
         fcstHours = numpy.array([(1, 5)])   
         do6HourlyMean = True
         
-        ipath = _inDataPath_.split('/')
+        ipath = inDataPath.split('/')
         hr = ipath[-1]
         today_date = ipath[-2]
         
@@ -327,7 +327,7 @@ def getVarDetails(_inDataPath_, fname, hr):
 # end of definition #2
 
 # start definition #3
-def getDataAttr(tmpCube):
+def getCubeAttr(tmpCube):
     """
     This module returns basic coordinate & attribute info about any Iris data cube.
     :param tmpCube: a temporary Iris cube containing a single geophysical field/parameter
@@ -478,7 +478,7 @@ def regridAnlFcstFiles(arg):
     fname = os.path.join(_inDataPath_, fpname)        
     
     # call definition to get variable indices
-    varIndices, varLvls, fcstHours, do6HourlyMean, infile, outfile = getVarDetails(_inDataPath_, fpname, hr)
+    varIndices, varLvls, fcstHours, do6HourlyMean, infile, outfile = getVarInOutFilesDetails(_inDataPath_, fpname, hr)
     
     if not os.path.isfile(fname): 
         print "The file doesn't exists: %s.. \n" %fname
@@ -494,7 +494,7 @@ def regridAnlFcstFiles(arg):
     
     # open for-loop-1 -- for all the variables in the cube
     for varIdx in varIndices:
-        stdNm, _, _, _, _ = getDataAttr(cubes[varIdx])
+        stdNm, _, _, _, _ = getCubeAttr(cubes[varIdx])
         print "stdNm", stdNm, fpname
         if stdNm is None:
             print "Unknown variable standard_name for varIdx[%d] of %s. So skipping it" % (varIdx, fpname)
@@ -526,7 +526,7 @@ def regridAnlFcstFiles(arg):
                 tmpCube = cubeAverager(tmpCube, action, intervals='6-hourly')            
             # end ofif do6HourlyMean and tmpCube.coords('forecast_period')[0].shape[0] > 1:     
 
-#            _, _, _, lat0, lon0 = getDataAttr(tmpCube)
+#            _, _, _, lat0, lon0 = getCubeAttr(tmpCube)
             # interpolate it 0,25 deg resolution by setting up sample points based on coord
             print "\n    Regridding data to 0.25x0.25 deg spatial resolution \n"
             print "From shape", tmpCube.shape
@@ -543,7 +543,7 @@ def regridAnlFcstFiles(arg):
             del tmpCube
             
             # get the regridded lat/lons
-            stdNm, fcstTm, refTm, lat1, lon1 = getDataAttr(regdCube)
+            stdNm, fcstTm, refTm, lat1, lon1 = getCubeAttr(regdCube)
 
             # save the cube in append mode as a grib2 file       
             if _inDataPath_.endswith('00'):
