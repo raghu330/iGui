@@ -13,6 +13,7 @@ import os, sys
 #from g2utils.um2grb2 import convertAnlFiles, convertFcstFiles
 # get this script abspath
 scriptPath = os.path.dirname(os.path.abspath(__file__))
+
 print "Reading configure file to load the paths"
 # get the configure lines
 clines = [l.strip() for l in open(os.path.join(scriptPath, 'configure')).readlines() \
