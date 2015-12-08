@@ -10,7 +10,7 @@ Date : 07.Dec.2015
 """
 
 import os, sys 
-#from g2utils.um2grb2 import convertAnlFiles, convertFcstFiles
+from g2utils.um2grb2 import convertAnlFiles, convertFcstFiles
 # get this script abspath
 scriptPath = os.path.dirname(os.path.abspath(__file__))
 
