@@ -11,10 +11,11 @@ Date : 07.Dec.2015
 
 import os, sys 
 from g2utils.um2grb2 import convertAnlFiles, convertFcstFiles
-
+# get this script abspath
+scriptPath = os.path.abspath(__file__)
 print "Reading configure file to load the paths"
 # get the configure lines
-clines = [l.strip() for l in open('configure').readlines() \
+clines = [l.strip() for l in open(os.path.join(scriptPath, 'configure')).readlines() \
                 if not l.startswith(('#', '/', '!', '\n', '%'))]
 # get the dictionary keys, values
 cdic = {k.strip(): v.strip() for k,v in [l.split('=') for l in clines]}
