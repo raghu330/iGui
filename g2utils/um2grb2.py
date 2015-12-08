@@ -54,7 +54,7 @@ Code History:
                   : Extraction of required variables
                   : Interpolation scheme to 0.25 degree (MNRS & DJ)
 3.  Sep 11th, 2015: Recasted for 6-hourly ouputs (MNRS)
-4.  Nov 05th, 2015: Changed fname to a string in getVarDetails() (MNRS)
+4.  Nov 05th, 2015: Changed fname to a string in getVarInOutFilesDetails() (MNRS)
 5.  Nov 07th, 2015: Added to iGui project on github from fcm project (MNRS & AAT)
 6.  Nov 09th, 2015: parallelization!!! (AAT)
 7.  Nov 10th, 2015: Spawned multiple versions for input (AAT & MNRS)
@@ -96,12 +96,12 @@ import datetime
 
 # -- Start coding
 
-current_date = None
-startT = None
-wrkngDir = None
-inDataPath = None
-opPath = None
-targetGrid = None
+_current_date_ = None
+_startT_ = None
+_tmpDir_ = None
+_inDataPath_ = None
+_opPath_ = None
+_targetGrid_ = None
 
 # create a class #1 for capturing stdin, stdout and stderr
 class myLog():
@@ -155,7 +155,7 @@ def getYdayStr(today):
 # end of def getYdayStr(today):
 
 # start definition #2
-def getVarDetails(inDataPath, fname, hr):
+def getVarInOutFilesDetails(inDataPath, fname, hr):
     """
     This definition module gets the required variables from the passed
     cube as per the WRF-Variables.txt file.
@@ -216,7 +216,7 @@ def getVarDetails(inDataPath, fname, hr):
             varIndx = [4] 
             # rest of them (i.e 1,2,3,5,6,7) from taken already from qwqg00 file.
         else:
-            varIndx = [1,2,3,4,5,6,7]
+            varIndx = [1,2,3,4,6,7] # 5 is not working
             
         # qwqg00 file variables are more correct than this short forecast vars.
         varLvls = 18
@@ -290,7 +290,7 @@ def getVarDetails(inDataPath, fname, hr):
         
     elif fname.startswith('umglaa_pd'):            # umglaa_pd
         # consider variable
-        # varIndx = [1,2,3,4,5,6,7] # needed
+        # varIndx = 5 # needed
         varIndx = [1,2,3,4, 6,7] # available for use
         varLvls = 18
         # the cube contains Instantaneous data at every 3-hours.
@@ -327,7 +327,7 @@ def getVarDetails(inDataPath, fname, hr):
 # end of definition #2
 
 # start definition #3
-def getDataAttr(tmpCube):
+def getCubeAttr(tmpCube):
     """
     This module returns basic coordinate & attribute info about any Iris data cube.
     :param tmpCube: a temporary Iris cube containing a single geophysical field/parameter
@@ -432,7 +432,7 @@ def cubeAverager(tmpCube, action='mean', intervals='hourly'):
 # end of def cubeAverager(tmpCube):
 
 # create a class #2 to initiate mp daemon processes
-class NoDaemonProcess(mp.Process):
+class _NoDaemonProcess(mp.Process):
     # make 'daemon' attribute always return False
     # A class created by AAT
     def _get_daemon(self):
@@ -443,13 +443,13 @@ class NoDaemonProcess(mp.Process):
 # end of class #2
 
 # create a class #3 to set-up worker-pools
-class MyPool(mppool.Pool):
+class _MyPool(mppool.Pool):
     # We sub-class multiprocessing.pool. Pool instead of multiprocessing.Pool
     # because the latter is only a wrapper function, not a proper class.
     ### http://stackoverflow.com/questions/6974695/python-process-pool-non-daemonic
     ### refer the above link to invoke child processes
     # A class created by AAT
-    Process = NoDaemonProcess
+    Process = _NoDaemonProcess
 # end of class #3
 
 # start definition #5
@@ -468,17 +468,17 @@ def regridAnlFcstFiles(arg):
     This module has been entirely revamped & improved by AAT based on an older and
     serial version by MNRS on 11/16/2015.
     """
-    global targetGrid, current_date, startT, inDataPath, opPath
+    global _targetGrid_, _current_date_, _startT_, _inDataPath_, _opPath_
     
     fpname, hr = arg 
     
     ### if fpname has some extension, then do not add hr to it.
     if not '.' in fpname: fpname += hr
     
-    fname = os.path.join(inDataPath, fpname)        
+    fname = os.path.join(_inDataPath_, fpname)        
     
     # call definition to get variable indices
-    varIndices, varLvls, fcstHours, do6HourlyMean, infile, outfile = getVarDetails(inDataPath, fpname, hr)
+    varIndices, varLvls, fcstHours, do6HourlyMean, infile, outfile = getVarInOutFilesDetails(_inDataPath_, fpname, hr)
     
     if not os.path.isfile(fname): 
         print "The file doesn't exists: %s.. \n" %fname
@@ -494,7 +494,7 @@ def regridAnlFcstFiles(arg):
     
     # open for-loop-1 -- for all the variables in the cube
     for varIdx in varIndices:
-        stdNm, _, _, _, _ = getDataAttr(cubes[varIdx])
+        stdNm, _, _, _, _ = getCubeAttr(cubes[varIdx])
         print "stdNm", stdNm, fpname
         if stdNm is None:
             print "Unknown variable standard_name for varIdx[%d] of %s. So skipping it" % (varIdx, fpname)
@@ -506,8 +506,9 @@ def regridAnlFcstFiles(arg):
             print "   Working on forecast time: ", fhr            
             # grab the variable which is f(t,z,y,x)
             # tmpCube corresponds to each variable for the SYNOP hours
+            print "extract start", infile, fhr, varIdx
             tmpCube = cubes[varIdx].extract(iris.Constraint(forecast_period=fhr))
-            
+            print "extrad end", infile, fhr, varIdx
             if do6HourlyMean and (tmpCube.coords('forecast_period')[0].shape[0] > 1):              
                 # grab the variable which is f(t,z,y,x)
                 # tmpCube corresponds to each variable for the SYNOP hours from
@@ -525,19 +526,27 @@ def regridAnlFcstFiles(arg):
                 tmpCube = cubeAverager(tmpCube, action, intervals='6-hourly')            
             # end ofif do6HourlyMean and tmpCube.coords('forecast_period')[0].shape[0] > 1:     
 
-            _, _, _, lat0, lon0 = getDataAttr(tmpCube)
+#            _, _, _, lat0, lon0 = getCubeAttr(tmpCube)
             # interpolate it 0,25 deg resolution by setting up sample points based on coord
-            print "\n    Regridding data to 0.25x0.25 deg spatial resolution \n"            
-            regdCube = tmpCube.interpolate(targetGrid, iris.analysis.Linear())
+            print "\n    Regridding data to 0.25x0.25 deg spatial resolution \n"
+            print "From shape", tmpCube.shape
+            try:            
+                regdCube = tmpCube.interpolate(_targetGrid_, iris.analysis.Linear())
+            except Exception as e:
+                print "ALERT !!! Error while regridding!! %s" % str(e)
+                print " So skipping this without saving data"
+                continue
+            # end of try:   
             print "regrid done"
+            print "To shape", regdCube.shape        
             # make memory free 
             del tmpCube
             
             # get the regridded lat/lons
-            stdNm, fcstTm, refTm, lat1, lon1 = getDataAttr(regdCube)
+            stdNm, fcstTm, refTm, lat1, lon1 = getCubeAttr(regdCube)
 
             # save the cube in append mode as a grib2 file       
-            if inDataPath.endswith('00'):
+            if _inDataPath_.endswith('00'):
                 if fcstTm.bounds is not None:
                     # get the last hour bound ## need this for pf files.                
                     hr = str(int(fcstTm.bounds[-1][-1]))     
@@ -549,11 +558,11 @@ def regridAnlFcstFiles(arg):
                 # end of if fcstTm.bounds:
             else:
                 # get the hour from infile path as 'least dirname'
-                hr = inDataPath.split('/')[-1]
-            # end of if inDataPath.endswith('00'):
+                hr = _inDataPath_.split('/')[-1]
+            # end of if _inDataPath_.endswith('00'):
             
-            outFn = outfile +'_'+ hr.zfill(3) +'hr'+ '_' + current_date +'.grib2'
-            outFn = os.path.join(opPath, outFn)
+            outFn = outfile +'_'+ hr.zfill(3) +'hr'+ '_' + _current_date_ +'.grib2'
+            outFn = os.path.join(_opPath_, outFn)
             print "Going to be save into ", outFn
             
             try:
@@ -564,11 +573,11 @@ def regridAnlFcstFiles(arg):
                     print "Removed soil_model_level_number from cube, due to error %s" % str(e)
                     iris.save(regdCube, outFn, append=True)
                 else:
-                    print "Got error while saving, %s" % str(e)
+                    print "ALERT !!! Got error while saving, %s" % str(e)
                     print " So skipping this without saving data"
                     continue
             except Exception as e:
-                print "Error while saving!! %s" % str(e)
+                print "ALERT !!! Error while saving!! %s" % str(e)
                 print " So skipping this without saving data"
                 continue
             # end of try:
@@ -586,7 +595,7 @@ def regridAnlFcstFiles(arg):
     # make memory free
     del cubes
     
-    print "  Time taken to convert the file: %8.5f seconds \n" %(time.time()-startT)
+    print "  Time taken to convert the file: %8.5f seconds \n" %(time.time()-_startT_)
     print " Finished converting file: %s into grib2 format for fcst file: %s \n" %(fpname,hr)
 # end of def regridAnlFcstFiles(fname):
 
@@ -630,22 +639,22 @@ def doAnlConvert(fname):
 # end def doAnlConvert(fname):
 
 
-# Start the main function
-def main(fnames, ftype):
+# Start the convertFilesInParallel function
+def convertFilesInParallel(fnames, ftype):
     """
-    Main function calling all the sub-functions
+    convertFilesInParallel function calling all the sub-functions
     :param fnames: a simple filename as argument in a string format
     :return: THE SheBang!
     """
     
-    global startT, wrkngDir
+    global _startT_, _tmpDir_
     
     ## get the no of files and 
     nprocesses = len(fnames)
     # lets create no of parallel process w.r.t no of files.
 
-    pool = MyPool(nprocesses)
-    print "Creating %d (non-daemon) workers and jobs in main process." % nprocesses
+    pool = _MyPool(nprocesses)
+    print "Creating %d (non-daemon) workers and jobs in convertFilesInParallel process." % nprocesses
     
     if ftype in ['anl', 'analysis']:
         print "fnames ++++++++", fnames
@@ -660,15 +669,14 @@ def main(fnames, ftype):
     pool.close()     
     pool.join()
     # parallel ended        
-    print "Total time taken to convert %d files was: %8.5f seconds \n" %(len(fnames),(time.time()-startT))
+    print "Total time taken to convert %d files was: %8.5f seconds \n" %(len(fnames),(time.time()-_startT_))
     return
-# end of def main(fnames):
+# end of def convertFilesInParallel(fnames):
 
 
-def convertFcstFiles(inPath='/gpfs3/home/umfcst/NCUM/fcst/', 
-            outPath='/gpfs2/home/umtid/test/GRIB-parallel/', hr='00'):
+def convertFcstFiles(inPath, outPath, tmpPath, hr='00'):
        
-    global targetGrid, current_date, startT, wrkngDir, inDataPath, opPath
+    global _targetGrid_, _current_date_, _startT_, _tmpDir_, _inDataPath_, _opPath_
     
     # forecast filenames partial name
     fcst_fnames = ['umglaa_pb','umglaa_pd', 'umglaa_pe'] 
@@ -676,44 +684,43 @@ def convertFcstFiles(inPath='/gpfs3/home/umfcst/NCUM/fcst/',
     ## pf file is not working....
     ###'umglaa_pf',
     # get the current date in YYYYMMDD format
-    current_date = time.strftime('%Y%m%d')
-
-    print "\n current_date is %s" % current_date
-    sys.stdout = myLog("log1.log")
+    _current_date_ = time.strftime('%Y%m%d')
+#    _current_date_ = '20151206'
+    print "\n _current_date_ is %s" % _current_date_
+    sys.stdout = myLog(os.path.join(_tmpDir_, "log1.log"))
     
     # start the timer now
-    startT = time.time()
+    _startT_ = time.time()
 
     # set-up base folders
-    wrkngDir = '/gpfs2/home/umtid/test/'
-    inDataPath = os.path.join(inPath, current_date, hr)
-    if not os.path.exists(inDataPath):
-        raise ValueError("In datapath does not exists %s" % inDataPath)
-    # end of if not os.path.exists(inDataPath):
+    _tmpDir_ = tmpPath
+    _inDataPath_ = os.path.join(inPath, _current_date_, hr)
+    if not os.path.exists(_inDataPath_):
+        raise ValueError("In datapath does not exists %s" % _inDataPath_)
+    # end of if not os.path.exists(_inDataPath_):
     
-    opPath = os.path.join(outPath, current_date)
-    if not os.path.exists(opPath):  
-        os.makedirs(opPath)
-        print "Created directory", opPath
-    # end of if not os.path.exists(opPath):  
+    _opPath_ = os.path.join(outPath, _current_date_)
+    if not os.path.exists(_opPath_):  
+        os.makedirs(_opPath_)
+        print "Created directory", _opPath_
+    # end of if not os.path.exists(_opPath_):  
     
     # target grid as 0.25 deg resolution by setting up sample points based on coord
-    targetGrid = [('longitude',numpy.linspace(0,360,1440)),
+    _targetGrid_ = [('longitude',numpy.linspace(0,360,1440)),
                     ('latitude',numpy.linspace(-90,90,721))]
                     
     # do convert for forecast files 
-    main(fcst_fnames, ftype='fcst')   
+    convertFilesInParallel(fcst_fnames, ftype='fcst')   
     
     
-    cmdStr = 'mv log1.log '+wrkngDir+ 'um2grib2_fcst_stdout_'+ current_date +'00.log'
+    cmdStr = 'mv '+_tmpDir_+'log1.log  '+_tmpDir_+ 'um2grib2_fcst_stdout_'+ _current_date_ +'00.log'
     os.system(cmdStr)     
 # end of def convertFcstFiles(...):
 
 
-def convertAnlFiles(inPath='/gpfs3/home/umfcst/NCUM/fcst/', 
-            outPath='/gpfs2/home/umtid/test/GRIB-parallel/', hr='00'):
+def convertAnlFiles(inPath, outPath, tmpPath, hr='00'):
        
-    global targetGrid, current_date, startT, wrkngDir, inDataPath, opPath
+    global _targetGrid_, _current_date_, _startT_, _tmpDir_, _inDataPath_, _opPath_
     
     # analysis filenames partial name
     anl_fnames = ['umglca_pb', 'umglca_pd', 'umglca_pe']
@@ -723,54 +730,54 @@ def convertAnlFiles(inPath='/gpfs3/home/umfcst/NCUM/fcst/',
     ## pf file is not working....
     ###'umglca_pf',
     # get the current date in YYYYMMDD format
-    current_date = time.strftime('%Y%m%d')
-
-    print "\n current_date is %s" % current_date
+    _current_date_ = time.strftime('%Y%m%d')
+#    _current_date_ = '20151206'
+    print "\n _current_date_ is %s" % _current_date_
     sys.stdout = myLog("log1.log")
     
     # start the timer now
-    startT = time.time()
+    _startT_ = time.time()
 
     # set-up base folders
-    wrkngDir = '/gpfs2/home/umtid/test/'
-    inDataPath = os.path.join(inPath, current_date, hr)
-    if not os.path.exists(inDataPath):
-        raise ValueError("In datapath does not exists %s" % inDataPath)
-    # end of if not os.path.exists(inDataPath):
+    _tmpDir_ = tmpPath
+    _inDataPath_ = os.path.join(inPath, _current_date_, hr)
+    if not os.path.exists(_inDataPath_):
+        raise ValueError("In datapath does not exists %s" % _inDataPath_)
+    # end of if not os.path.exists(_inDataPath_):
     
-    opPath = os.path.join(outPath, current_date)
-    if not os.path.exists(opPath):  
-        os.makedirs(opPath)
-        print "Created directory", opPath
-    # end of if not os.path.exists(opPath):  
+    _opPath_ = os.path.join(outPath, _current_date_)
+    if not os.path.exists(_opPath_):  
+        os.makedirs(_opPath_)
+        print "Created directory", _opPath_
+    # end of if not os.path.exists(_opPath_):  
     
     # target grid as 0.25 deg resolution by setting up sample points based on coord
-    targetGrid = [('longitude',numpy.linspace(0,360,1440)),
+    _targetGrid_ = [('longitude',numpy.linspace(0,360,1440)),
                     ('latitude',numpy.linspace(-90,90,721))]
                     
     # do convert for analysis files
-    main(anl_fnames, ftype='anl')   
+    convertFilesInParallel(anl_fnames, ftype='anl')   
     
-    cmdStr = 'mv log1.log '+wrkngDir+ 'um2grib2_anl_stdout_'+ current_date +hr+'.log'
+    cmdStr = 'mv log1.log '+_tmpDir_+ 'um2grib2_anl_stdout_'+ _current_date_ +hr+'.log'
     os.system(cmdStr)  
 # end of def convertAnlFiles(...):
 
 
-# feeder!
-if __name__ == '__main__':
-    
-    
-    # call analysis conversion function w.r.t data assimilated during short forecast hour.
-    convertAnlFiles(hr='00')
-    #########################################################
-    ## Can be called the above function as below also.      #
-    ### for hour in ['00', '06', '12', '18']:               #
-    ###     convertAnlFiles(hr=hour)                        #
-    ### end of for hour in ['00', '06', '12', '18']:        #
-    ##                                                      #
-    #########################################################
-    
-    # call forecast conversion function w.r.t data assimilated at 00z long forecast hour.
-    convertFcstFiles(hr='00')
-    
+## feeder!
+#if __name__ == '__main__':
+#    
+#    
+#    # call analysis conversion function w.r.t data assimilated during short forecast hour.
+#    convertAnlFiles(hr='00')
+#    #########################################################
+#    ## Can be called the above function as below also.      #
+#    ### for hour in ['00', '06', '12', '18']:               #
+#    ###     convertAnlFiles(hr=hour)                        #
+#    ### end of for hour in ['00', '06', '12', '18']:        #
+#    ##                                                      #
+#    #########################################################
+#    
+#    # call forecast conversion function w.r.t data assimilated at 00z long forecast hour.
+#    convertFcstFiles(hr='00')
+#    
 # -- End code

@@ -1,0 +1,22 @@
+##############################################################################
+## configure file: Used to setup indata path, outdata path, temporary path  ##
+## to run the um2grb2 python parallel scripts which will create analysis    ##
+## and forecast files.                                                      ##
+##                                                                          ##
+## Author : Arulalan <arulalan@ncmrwf.gov.in>                               ##
+## Updated : 08-Dec-2015                                                    ##
+##############################################################################
+
+##### BEGIN OF SETUP CONFIGURE  FOR um2grb2 SCRIPTS ######
+
+## model pp filedsfiles path 
+inPath = /gpfs3/home/umfcst/NCUM/fcst/
+
+## model grib2 files path
+outPath = /gpfs2/home/umtid/test/GRIB-parallel/
+
+## working directory (used to create temporary log files)
+tmpPath = /gpfs2/home/umtid/test/
+
+
+##### END OF SETUP CONFIGURE FOR um2grb2 SCRIPTS ######
