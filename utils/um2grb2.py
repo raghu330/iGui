@@ -98,7 +98,7 @@ import datetime
 
 current_date = None
 startT = None
-wrkngDir = None
+tmpDir = None
 inDataPath = None
 opPath = None
 targetGrid = None
@@ -216,7 +216,7 @@ def getVarDetails(inDataPath, fname, hr):
             varIndx = [4] 
             # rest of them (i.e 1,2,3,5,6,7) from taken already from qwqg00 file.
         else:
-            varIndx = [1,2,3,4,5,6,7]
+            varIndx = [1,2,3,4,6,7] # 5 is not working
             
         # qwqg00 file variables are more correct than this short forecast vars.
         varLvls = 18
@@ -290,7 +290,7 @@ def getVarDetails(inDataPath, fname, hr):
         
     elif fname.startswith('umglaa_pd'):            # umglaa_pd
         # consider variable
-        # varIndx = [1,2,3,4,5,6,7] # needed
+        # varIndx = 5 # needed
         varIndx = [1,2,3,4, 6,7] # available for use
         varLvls = 18
         # the cube contains Instantaneous data at every 3-hours.
@@ -506,8 +506,9 @@ def regridAnlFcstFiles(arg):
             print "   Working on forecast time: ", fhr            
             # grab the variable which is f(t,z,y,x)
             # tmpCube corresponds to each variable for the SYNOP hours
+            print "extract start", infile, fhr, varIdx
             tmpCube = cubes[varIdx].extract(iris.Constraint(forecast_period=fhr))
-            
+            print "extrad end", infile, fhr, varIdx
             if do6HourlyMean and (tmpCube.coords('forecast_period')[0].shape[0] > 1):              
                 # grab the variable which is f(t,z,y,x)
                 # tmpCube corresponds to each variable for the SYNOP hours from
@@ -525,11 +526,19 @@ def regridAnlFcstFiles(arg):
                 tmpCube = cubeAverager(tmpCube, action, intervals='6-hourly')            
             # end ofif do6HourlyMean and tmpCube.coords('forecast_period')[0].shape[0] > 1:     
 
-            _, _, _, lat0, lon0 = getDataAttr(tmpCube)
+#            _, _, _, lat0, lon0 = getDataAttr(tmpCube)
             # interpolate it 0,25 deg resolution by setting up sample points based on coord
-            print "\n    Regridding data to 0.25x0.25 deg spatial resolution \n"            
-            regdCube = tmpCube.interpolate(targetGrid, iris.analysis.Linear())
+            print "\n    Regridding data to 0.25x0.25 deg spatial resolution \n"
+            print "From shape", tmpCube.shape
+            try:            
+                regdCube = tmpCube.interpolate(targetGrid, iris.analysis.Linear())
+            except Exception as e:
+                print "ALERT !!! Error while regridding!! %s" % str(e)
+                print " So skipping this without saving data"
+                continue
+            # end of try:   
             print "regrid done"
+            print "To shape", regdCube.shape        
             # make memory free 
             del tmpCube
             
@@ -564,11 +573,11 @@ def regridAnlFcstFiles(arg):
                     print "Removed soil_model_level_number from cube, due to error %s" % str(e)
                     iris.save(regdCube, outFn, append=True)
                 else:
-                    print "Got error while saving, %s" % str(e)
+                    print "ALERT !!! Got error while saving, %s" % str(e)
                     print " So skipping this without saving data"
                     continue
             except Exception as e:
-                print "Error while saving!! %s" % str(e)
+                print "ALERT !!! Error while saving!! %s" % str(e)
                 print " So skipping this without saving data"
                 continue
             # end of try:
@@ -638,7 +647,7 @@ def main(fnames, ftype):
     :return: THE SheBang!
     """
     
-    global startT, wrkngDir
+    global startT, tmpDir
     
     ## get the no of files and 
     nprocesses = len(fnames)
@@ -665,10 +674,9 @@ def main(fnames, ftype):
 # end of def main(fnames):
 
 
-def convertFcstFiles(inPath='/gpfs3/home/umfcst/NCUM/fcst/', 
-            outPath='/gpfs2/home/umtid/test/GRIB-parallel/', hr='00'):
+def convertFcstFiles(inPath, outPath, tmpPath, hr='00'):
        
-    global targetGrid, current_date, startT, wrkngDir, inDataPath, opPath
+    global targetGrid, current_date, startT, tmpDir, inDataPath, opPath
     
     # forecast filenames partial name
     fcst_fnames = ['umglaa_pb','umglaa_pd', 'umglaa_pe'] 
@@ -677,7 +685,7 @@ def convertFcstFiles(inPath='/gpfs3/home/umfcst/NCUM/fcst/',
     ###'umglaa_pf',
     # get the current date in YYYYMMDD format
     current_date = time.strftime('%Y%m%d')
-
+#    current_date = '20151206'
     print "\n current_date is %s" % current_date
     sys.stdout = myLog("log1.log")
     
@@ -685,7 +693,7 @@ def convertFcstFiles(inPath='/gpfs3/home/umfcst/NCUM/fcst/',
     startT = time.time()
 
     # set-up base folders
-    wrkngDir = '/gpfs2/home/umtid/test/'
+    tmpDir = tmpPath
     inDataPath = os.path.join(inPath, current_date, hr)
     if not os.path.exists(inDataPath):
         raise ValueError("In datapath does not exists %s" % inDataPath)
@@ -705,15 +713,14 @@ def convertFcstFiles(inPath='/gpfs3/home/umfcst/NCUM/fcst/',
     main(fcst_fnames, ftype='fcst')   
     
     
-    cmdStr = 'mv log1.log '+wrkngDir+ 'um2grib2_fcst_stdout_'+ current_date +'00.log'
+    cmdStr = 'mv log1.log '+tmpDir+ 'um2grib2_fcst_stdout_'+ current_date +'00.log'
     os.system(cmdStr)     
 # end of def convertFcstFiles(...):
 
 
-def convertAnlFiles(inPath='/gpfs3/home/umfcst/NCUM/fcst/', 
-            outPath='/gpfs2/home/umtid/test/GRIB-parallel/', hr='00'):
+def convertAnlFiles(inPath, outPath, tmpPath, hr='00'):
        
-    global targetGrid, current_date, startT, wrkngDir, inDataPath, opPath
+    global targetGrid, current_date, startT, tmpDir, inDataPath, opPath
     
     # analysis filenames partial name
     anl_fnames = ['umglca_pb', 'umglca_pd', 'umglca_pe']
@@ -724,7 +731,7 @@ def convertAnlFiles(inPath='/gpfs3/home/umfcst/NCUM/fcst/',
     ###'umglca_pf',
     # get the current date in YYYYMMDD format
     current_date = time.strftime('%Y%m%d')
-
+#    current_date = '20151206'
     print "\n current_date is %s" % current_date
     sys.stdout = myLog("log1.log")
     
@@ -732,7 +739,7 @@ def convertAnlFiles(inPath='/gpfs3/home/umfcst/NCUM/fcst/',
     startT = time.time()
 
     # set-up base folders
-    wrkngDir = '/gpfs2/home/umtid/test/'
+    tmpDir = tmpPath
     inDataPath = os.path.join(inPath, current_date, hr)
     if not os.path.exists(inDataPath):
         raise ValueError("In datapath does not exists %s" % inDataPath)
@@ -751,26 +758,26 @@ def convertAnlFiles(inPath='/gpfs3/home/umfcst/NCUM/fcst/',
     # do convert for analysis files
     main(anl_fnames, ftype='anl')   
     
-    cmdStr = 'mv log1.log '+wrkngDir+ 'um2grib2_anl_stdout_'+ current_date +hr+'.log'
+    cmdStr = 'mv log1.log '+tmpDir+ 'um2grib2_anl_stdout_'+ current_date +hr+'.log'
     os.system(cmdStr)  
 # end of def convertAnlFiles(...):
 
 
-# feeder!
-if __name__ == '__main__':
-    
-    
-    # call analysis conversion function w.r.t data assimilated during short forecast hour.
-    convertAnlFiles(hr='00')
-    #########################################################
-    ## Can be called the above function as below also.      #
-    ### for hour in ['00', '06', '12', '18']:               #
-    ###     convertAnlFiles(hr=hour)                        #
-    ### end of for hour in ['00', '06', '12', '18']:        #
-    ##                                                      #
-    #########################################################
-    
-    # call forecast conversion function w.r.t data assimilated at 00z long forecast hour.
-    convertFcstFiles(hr='00')
-    
+## feeder!
+#if __name__ == '__main__':
+#    
+#    
+#    # call analysis conversion function w.r.t data assimilated during short forecast hour.
+#    convertAnlFiles(hr='00')
+#    #########################################################
+#    ## Can be called the above function as below also.      #
+#    ### for hour in ['00', '06', '12', '18']:               #
+#    ###     convertAnlFiles(hr=hour)                        #
+#    ### end of for hour in ['00', '06', '12', '18']:        #
+#    ##                                                      #
+#    #########################################################
+#    
+#    # call forecast conversion function w.r.t data assimilated at 00z long forecast hour.
+#    convertFcstFiles(hr='00')
+#    
 # -- End code
