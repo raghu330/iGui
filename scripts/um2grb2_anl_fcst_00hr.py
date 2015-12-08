@@ -38,7 +38,7 @@ for name, path in [('inPath', inPath), ('outPath', outPath), ('tmpPath', tmpPath
 print "Successfully loaded the above paths from configure file!"
 
 ### call analysis conversion function w.r.t data assimilated during short forecast hour.
-#convertAnlFiles(inPath, outPath, tmpPath, hr='00')
+convertAnlFiles(inPath, outPath, tmpPath, hr='00')
 ##    
 ### call forecast conversion function w.r.t data assimilated at 00z long forecast hour.
-#convertFcstFiles(inPath, outPath, tmpPath, hr='00')
+convertFcstFiles(inPath, outPath, tmpPath, hr='00')
