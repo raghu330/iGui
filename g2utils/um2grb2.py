@@ -84,7 +84,7 @@ Copyright: ESSO-NCMRWF,MoES, 2015-2016.
 import os, sys, time
 import numpy, scipy
 import iris
-#import gribapi
+import gribapi
 import netCDF4
 import iris.unit as unit
 import multiprocessing as mp
