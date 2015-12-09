@@ -729,6 +729,7 @@ def convertAnlFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr='
     ## pf file is not working....
     ###'umglca_pf',
     # get the current date in YYYYMMDD format
+    _tmpDir_ = tmpPath
     _current_date_ = date
     print "\n _current_date_ is %s" % _current_date_
     sys.stdout = myLog(os.path.join(_tmpDir_, "log1.log"))
