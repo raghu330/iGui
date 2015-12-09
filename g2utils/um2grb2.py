@@ -674,7 +674,7 @@ def convertFilesInParallel(fnames, ftype):
 # end of def convertFilesInParallel(fnames):
 
 
-def convertFcstFiles(inPath, outPath, tmpPath, hr='00'):
+def convertFcstFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr='00'):
        
     global _targetGrid_, _current_date_, _startT_, _tmpDir_, _inDataPath_, _opPath_
     
@@ -684,16 +684,15 @@ def convertFcstFiles(inPath, outPath, tmpPath, hr='00'):
     ## pf file is not working....
     ###'umglaa_pf',
     # get the current date in YYYYMMDD format
-    _current_date_ = time.strftime('%Y%m%d')
-#    _current_date_ = '20151206'
+    _tmpDir_ = tmpPath
+    _current_date_ = date
     print "\n _current_date_ is %s" % _current_date_
-    sys.stdout = myLog(os.path.join(_tmpDir_, "log1.log"))
+    sys.stdout = myLog(os.path.join(_tmpDir_, "log2.log"))
     
     # start the timer now
     _startT_ = time.time()
 
-    # set-up base folders
-    _tmpDir_ = tmpPath
+    # set-up base folders    
     _inDataPath_ = os.path.join(inPath, _current_date_, hr)
     if not os.path.exists(_inDataPath_):
         raise ValueError("In datapath does not exists %s" % _inDataPath_)
@@ -713,12 +712,12 @@ def convertFcstFiles(inPath, outPath, tmpPath, hr='00'):
     convertFilesInParallel(fcst_fnames, ftype='fcst')   
     
     
-    cmdStr = 'mv '+_tmpDir_+'log1.log  '+_tmpDir_+ 'um2grib2_fcst_stdout_'+ _current_date_ +'00.log'
+    cmdStr = 'mv '+_tmpDir_+'log2.log  '+_tmpDir_+ 'um2grib2_fcst_stdout_'+ _current_date_ +'_00hr.log'
     os.system(cmdStr)     
 # end of def convertFcstFiles(...):
 
 
-def convertAnlFiles(inPath, outPath, tmpPath, hr='00'):
+def convertAnlFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr='00'):
        
     global _targetGrid_, _current_date_, _startT_, _tmpDir_, _inDataPath_, _opPath_
     
@@ -730,16 +729,15 @@ def convertAnlFiles(inPath, outPath, tmpPath, hr='00'):
     ## pf file is not working....
     ###'umglca_pf',
     # get the current date in YYYYMMDD format
-    _current_date_ = time.strftime('%Y%m%d')
-#    _current_date_ = '20151206'
+    _tmpDir_ = tmpPath
+    _current_date_ = date
     print "\n _current_date_ is %s" % _current_date_
-    sys.stdout = myLog("log1.log")
+    sys.stdout = myLog(os.path.join(_tmpDir_, "log1.log"))
     
     # start the timer now
     _startT_ = time.time()
 
     # set-up base folders
-    _tmpDir_ = tmpPath
     _inDataPath_ = os.path.join(inPath, _current_date_, hr)
     if not os.path.exists(_inDataPath_):
         raise ValueError("In datapath does not exists %s" % _inDataPath_)
@@ -758,7 +756,7 @@ def convertAnlFiles(inPath, outPath, tmpPath, hr='00'):
     # do convert for analysis files
     convertFilesInParallel(anl_fnames, ftype='anl')   
     
-    cmdStr = 'mv log1.log '+_tmpDir_+ 'um2grib2_anl_stdout_'+ _current_date_ +hr+'.log'
+    cmdStr = 'mv '+_tmpDir_+'log1.log  '+_tmpDir_+ 'um2grib2_anl_stdout_'+ _current_date_ +'_' +hr+'hr.log'
     os.system(cmdStr)  
 # end of def convertAnlFiles(...):
 

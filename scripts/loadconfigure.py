@@ -1,16 +1,12 @@
 """
-This is simple script to invoke parallel conversion function from um2grb2
-and pass the assimilated / forecasted hour as argument.
+This is script used to load all the parameters from configure text file 
+and cross check either all the paths are valid or not.
 
-hour : 00
-Output : It creates both analysis - 1 file (um_ana_00hr_date.grib2) and 
-         forecast - 40 files (um_prg_00hr_date.grib2, ..., um_prg_240hr_date.grib2).
 Written by : Arulalan.T
 Date : 07.Dec.2015
 """
 
-import os, sys 
-from g2utils.um2grb2 import convertAnlFiles, convertFcstFiles
+import os, sys, time  
 # get this script abspath
 scriptPath = os.path.dirname(os.path.abspath(__file__))
 
@@ -25,6 +21,7 @@ cdic = {k.strip(): v.strip() for k,v in [l.split('=') for l in clines]}
 inPath = cdic.get('inPath', None)  
 outPath = cdic.get('outPath', None)
 tmpPath = cdic.get('tmpPath', None)
+date = cdic.get('date', 'YYYYMMDD')
 
 # check the variable's path 
 for name, path in [('inPath', inPath), ('outPath', outPath), ('tmpPath', tmpPath)]:
@@ -35,10 +32,7 @@ for name, path in [('inPath', inPath), ('outPath', outPath), ('tmpPath', tmpPath
     print name, " = ", path
 # end of for name, path in [...]:
 
-print "Successfully loaded the above paths from configure file!"
-
-### call analysis conversion function w.r.t data assimilated during short forecast hour.
-convertAnlFiles(inPath, outPath, tmpPath, hr='00')
-##    
-### call forecast conversion function w.r.t data assimilated at 00z long forecast hour.
-convertFcstFiles(inPath, outPath, tmpPath, hr='00')
+# get the current date if not specified
+if date == 'YYYYMMDD': date=time.strftime('%Y%m%d')
+print "date = ", date
+print "Successfully loaded the above params from configure file!"

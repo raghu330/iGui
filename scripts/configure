@@ -18,5 +18,10 @@ outPath = /gpfs2/home/umtid/test/GRIB-parallel/
 ## working directory (used to create temporary log files)
 tmpPath = /gpfs2/home/umtid/test/
 
+## By default date takes argument as YYYYMMDD (which means it assume today's date)
+## But user can specify the different date by follwing the same format.
+## for eg, date = 20151209 # then it will execute the scripts for 09-Dec-2015.
+## date = YYYYMMDD # then it will execute the scripts for today's date.
+date = YYYYMMDD
 
 ##### END OF SETUP CONFIGURE FOR um2grb2 SCRIPTS ######
