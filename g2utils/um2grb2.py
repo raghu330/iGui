@@ -684,6 +684,7 @@ def convertFcstFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr=
     ## pf file is not working....
     ###'umglaa_pf',
     # get the current date in YYYYMMDD format
+    _tmpDir_ = tmpPath
     _current_date_ = date
     print "\n _current_date_ is %s" % _current_date_
     sys.stdout = myLog(os.path.join(_tmpDir_, "log2.log"))
@@ -691,8 +692,7 @@ def convertFcstFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr=
     # start the timer now
     _startT_ = time.time()
 
-    # set-up base folders
-    _tmpDir_ = tmpPath
+    # set-up base folders    
     _inDataPath_ = os.path.join(inPath, _current_date_, hr)
     if not os.path.exists(_inDataPath_):
         raise ValueError("In datapath does not exists %s" % _inDataPath_)
@@ -738,7 +738,6 @@ def convertAnlFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr='
     _startT_ = time.time()
 
     # set-up base folders
-    _tmpDir_ = tmpPath
     _inDataPath_ = os.path.join(inPath, _current_date_, hr)
     if not os.path.exists(_inDataPath_):
         raise ValueError("In datapath does not exists %s" % _inDataPath_)
