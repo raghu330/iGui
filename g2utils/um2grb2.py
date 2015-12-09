@@ -674,7 +674,7 @@ def convertFilesInParallel(fnames, ftype):
 # end of def convertFilesInParallel(fnames):
 
 
-def convertFcstFiles(inPath, outPath, tmpPath, hr='00'):
+def convertFcstFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr='00'):
        
     global _targetGrid_, _current_date_, _startT_, _tmpDir_, _inDataPath_, _opPath_
     
@@ -684,8 +684,7 @@ def convertFcstFiles(inPath, outPath, tmpPath, hr='00'):
     ## pf file is not working....
     ###'umglaa_pf',
     # get the current date in YYYYMMDD format
-    _current_date_ = time.strftime('%Y%m%d')
-#    _current_date_ = '20151206'
+    _current_date_ = date
     print "\n _current_date_ is %s" % _current_date_
     sys.stdout = myLog(os.path.join(_tmpDir_, "log1.log"))
     
@@ -718,7 +717,7 @@ def convertFcstFiles(inPath, outPath, tmpPath, hr='00'):
 # end of def convertFcstFiles(...):
 
 
-def convertAnlFiles(inPath, outPath, tmpPath, hr='00'):
+def convertAnlFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr='00'):
        
     global _targetGrid_, _current_date_, _startT_, _tmpDir_, _inDataPath_, _opPath_
     
@@ -730,8 +729,7 @@ def convertAnlFiles(inPath, outPath, tmpPath, hr='00'):
     ## pf file is not working....
     ###'umglca_pf',
     # get the current date in YYYYMMDD format
-    _current_date_ = time.strftime('%Y%m%d')
-#    _current_date_ = '20151206'
+    _current_date_ = date
     print "\n _current_date_ is %s" % _current_date_
     sys.stdout = myLog("log1.log")
     
