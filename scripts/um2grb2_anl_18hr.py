@@ -38,5 +38,5 @@ for name, path in [('inPath', inPath), ('outPath', outPath), ('tmpPath', tmpPath
 print "Successfully loaded the above paths from configure file!"
 
 # call analysis conversion function w.r.t data assimilated during short forecast hour.
-convertAnlFiles(inPath, outPath, tmpPath, hr='18')
+convertAnlFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr='18')
 
