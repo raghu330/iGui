@@ -472,13 +472,16 @@ def regridAnlFcstFiles(arg):
     
     fpname, hr = arg 
     
-    ### if fpname has some extension, then do not add hr to it.
-    if not '.' in fpname: fpname += hr
+    fext = fpname.split('_')[-1]
     
-    fname = os.path.join(_inDataPath_, fpname)        
+    ### if fileName has some extension, then do not add hr to it.
+    fileName = fpname + hr if not '.' in fpname else fpname
+    
+    fname = os.path.join(_inDataPath_, fileName)        
     
     # call definition to get variable indices
-    varIndices, varLvls, fcstHours, do6HourlyMean, infile, outfile = getVarInOutFilesDetails(_inDataPath_, fpname, hr)
+    varIndices, varLvls, fcstHours, do6HourlyMean, infile, outfile = getVarInOutFilesDetails(_inDataPath_,
+                                                                                             fileName, hr)
     
     if not os.path.isfile(fname): 
         print "The file doesn't exists: %s.. \n" %fname
@@ -495,9 +498,9 @@ def regridAnlFcstFiles(arg):
     # open for-loop-1 -- for all the variables in the cube
     for varIdx in varIndices:
         stdNm, _, _, _, _ = getCubeAttr(cubes[varIdx])
-        print "stdNm", stdNm, fpname
+        print "stdNm", stdNm, fileName
         if stdNm is None:
-            print "Unknown variable standard_name for varIdx[%d] of %s. So skipping it" % (varIdx, fpname)
+            print "Unknown variable standard_name for varIdx[%d] of %s. So skipping it" % (varIdx, fileName)
             continue
         # end of if 'unknown' in stdNm: 
         print "  Working on variable: %s \n" %stdNm
@@ -550,18 +553,18 @@ def regridAnlFcstFiles(arg):
                 if fcstTm.bounds is not None:
                     # get the last hour bound ## need this for pf files.                
                     hr = str(int(fcstTm.bounds[-1][-1]))     
-                    print "Bounds comes in ", hr, fcstTm.bounds, fpname       
+                    print "Bounds comes in ", hr, fcstTm.bounds, fileName       
                 else:
                     # get the fcst time point 
                     hr = str(int(fcstTm.points))
-                    print "points comes in ", hr, fpname 
+                    print "points comes in ", hr, fileName 
                 # end of if fcstTm.bounds:
             else:
                 # get the hour from infile path as 'least dirname'
                 hr = _inDataPath_.split('/')[-1]
             # end of if _inDataPath_.endswith('00'):
             
-            outFn = outfile +'_'+ hr.zfill(3) +'hr'+ '_' + _current_date_ +'.grib2'
+            outFn = outfile +'_'+ hr.zfill(3) +'hr'+ '_' + _current_date_ + '_' + fext + '.grib2'
             outFn = os.path.join(_opPath_, outFn)
             print "Going to be save into ", outFn
             
@@ -596,9 +599,42 @@ def regridAnlFcstFiles(arg):
     del cubes
     
     print "  Time taken to convert the file: %8.5f seconds \n" %(time.time()-_startT_)
-    print " Finished converting file: %s into grib2 format for fcst file: %s \n" %(fpname,hr)
+    print " Finished converting file: %s into grib2 format for fcst file: %s \n" %(fileName,hr)
 # end of def regridAnlFcstFiles(fname):
 
+def doMergeInOrder(arg):
+    
+    ftype, hr = arg 
+    global _current_date_
+    
+    if ftype in ['fcst', 'forecast']:
+        order = ('pb', 'pd', 'pe')
+        outfile = 'um_prg' 
+    elif ftype in ['anl', 'analysis']:
+        order = ('qwqg00.pp0', 'pb', 'pd', 'pe')
+        outfile = 'um_ana'
+    # end of if ftype in ['fcst', 'forecast']:    
+    
+    infiles = ''
+    for fext in order:
+        infiles += outfile +'_'+ hr.zfill(3) +'hr'+ '_' + _current_date_ + '_' 
+        infiles += fext + '.grib2' + '  '*4
+    # end of for fext in order:
+    merged_file = outfile +'_'+ hr.zfill(3) +'hr'+ '_' + _current_date_ + '.grib2'
+    # merge in order
+    mergecmd = "cdo merge " + infiles + "   " + merged_file 
+    print "merge command : ", mergecmd
+    os.system(mergecmd)
+    print "merged into ", merged_file
+    
+    time.sleep(2)
+    # remove older files
+    rmcmd = "rm -rf " + infiles
+    os.system(rmcmd)
+    print "removed older files ", infiles
+    return 
+# end of def doMergeInOrder(arg):
+    
 # Start definition #6
 def doFcstConvert(fname):
     """
@@ -647,12 +683,13 @@ def convertFilesInParallel(fnames, ftype):
     :return: THE SheBang!
     """
     
-    global _startT_, _tmpDir_
+    global _startT_, _tmpDir_, _opPath_
     
     ## get the no of files and 
     nprocesses = len(fnames)
     # lets create no of parallel process w.r.t no of files.
-
+    
+    # parallel begin - 1 
     pool = _MyPool(nprocesses)
     print "Creating %d (non-daemon) workers and jobs in convertFilesInParallel process." % nprocesses
     
@@ -668,8 +705,33 @@ def convertFilesInParallel(fnames, ftype):
     # closing and joining master pools
     pool.close()     
     pool.join()
-    # parallel ended        
+    # parallel end - 1 
+    
     print "Total time taken to convert %d files was: %8.5f seconds \n" %(len(fnames),(time.time()-_startT_))
+    
+    print "Lets re-order all the files!!!"
+    #####
+    ## 6-hourly Files have been created with extension.
+    ## Now lets do merge of those individual files in order, in parallel mode. 
+    current_dir = os.getcwd()
+    os.chdir(_opPath_)
+        
+    ftype_hr = [(ftype, str(hr).zfill(3)) for hr in range(6,241,6)]
+    ## get the no of created anl/fcst 6hourly files  
+    nprocesses = len(ftype_hr)
+    
+    # parallel begin - 2
+    pool = _MyPool(nprocesses)
+    print "Creating %d (non-daemon) workers and jobs in doMergeInOrder process." % nprocesses
+    results = pool.map(doMergeInOrder, ftype_hr)    
+    # closing and joining master pools
+    pool.close()     
+    pool.join()
+    # parallel end - 2
+    
+    os.chdir(current_dir)
+    print "Total time taken to convert and re-order %d files was: %8.5f seconds \n" %(len(fnames),
+                                                                            (time.time()-_startT_))
     return
 # end of def convertFilesInParallel(fnames):
 
