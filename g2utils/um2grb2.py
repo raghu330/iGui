@@ -686,7 +686,7 @@ def convertFcstFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr=
     # get the current date in YYYYMMDD format
     _current_date_ = date
     print "\n _current_date_ is %s" % _current_date_
-    sys.stdout = myLog(os.path.join(_tmpDir_, "log1.log"))
+    sys.stdout = myLog(os.path.join(_tmpDir_, "log2.log"))
     
     # start the timer now
     _startT_ = time.time()
@@ -712,7 +712,7 @@ def convertFcstFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr=
     convertFilesInParallel(fcst_fnames, ftype='fcst')   
     
     
-    cmdStr = 'mv '+_tmpDir_+'log1.log  '+_tmpDir_+ 'um2grib2_fcst_stdout_'+ _current_date_ +'00.log'
+    cmdStr = 'mv '+_tmpDir_+'log2.log  '+_tmpDir_+ 'um2grib2_fcst_stdout_'+ _current_date_ +'_00hr.log'
     os.system(cmdStr)     
 # end of def convertFcstFiles(...):
 
@@ -731,7 +731,7 @@ def convertAnlFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr='
     # get the current date in YYYYMMDD format
     _current_date_ = date
     print "\n _current_date_ is %s" % _current_date_
-    sys.stdout = myLog("log1.log")
+    sys.stdout = myLog(os.path.join(_tmpDir_, "log1.log"))
     
     # start the timer now
     _startT_ = time.time()
@@ -756,7 +756,7 @@ def convertAnlFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr='
     # do convert for analysis files
     convertFilesInParallel(anl_fnames, ftype='anl')   
     
-    cmdStr = 'mv log1.log '+_tmpDir_+ 'um2grib2_anl_stdout_'+ _current_date_ +hr+'.log'
+    cmdStr = 'mv '+_tmpDir_+'log1.log  '+_tmpDir_+ 'um2grib2_anl_stdout_'+ _current_date_ +'_' +hr+'hr.log'
     os.system(cmdStr)  
 # end of def convertAnlFiles(...):
 
