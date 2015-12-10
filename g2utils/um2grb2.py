@@ -81,7 +81,7 @@ Copyright: ESSO-NCMRWF,MoES, 2015-2016.
 """
 
 # -- Start importing necessary modules
-import os, sys, time
+import os, sys, time, subprocess
 import numpy, scipy
 import iris
 import gribapi
@@ -671,22 +671,24 @@ def doMergeInOrder(arg):
         outfile = 'um_ana'
     # end of if ftype in ['fcst', 'forecast']:    
     
-    infiles = ''
+    infiles = []
     for fext in order:
-        infiles += outfile +'_'+ fcst_hr.zfill(3) +'hr'+ '_' + _current_date_ + '_' 
-        infiles += fext + '.grib2' + '  '*4
+        infile = ''
+        infile += outfile +'_'+ fcst_hr.zfill(3) +'hr'+ '_' 
+        infile += _current_date_ + '_' + fext + '.grib2'
+        infiles.append(infile)
     # end of for fext in order:
     merged_file = outfile +'_'+ fcst_hr.zfill(3) +'hr'+ '_' + _current_date_ + '.grib2'
     # merge in order
-    mergecmd = "cdo merge " + infiles + "   " + merged_file 
+    mergecmd = ["cdo", "merge"] + infiles + [merged_file] 
     print "merge command : ", mergecmd
-    os.system(mergecmd)
+    subprocess.call(mergecmd)
     print "merged into ", merged_file
     
     time.sleep(2)
     # remove older files
-    rmcmd = "rm " + infiles
-    os.system(rmcmd)
+    rmcmd = ["rm"] + infiles
+    subprocess.call(rmcmd)
     print "removed partial files ", infiles
 # end of def doMergeInOrder(arg):
 
@@ -840,8 +842,8 @@ def convertFcstFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr=
     # do re-order and merge files in parallel
     doMergeInOrderInParallel('fcst', hr)
     
-    cmdStr = 'mv '+_tmpDir_+'log2.log  '+_tmpDir_+ 'um2grib2_fcst_stdout_'+ _current_date_ +'_00hr.log'
-    os.system(cmdStr)     
+    cmdStr = ['mv', _tmpDir_+'log2.log', _tmpDir_+ 'um2grib2_fcst_stdout_'+ _current_date_ +'_00hr.log']
+    subprocess.call(cmdStr)     
 # end of def convertFcstFiles(...):
 
 
@@ -887,8 +889,8 @@ def convertAnlFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr='
     # do re-order and merge files in parallel
     doMergeInOrderInParallel('anl', hr)
     
-    cmdStr = 'mv '+_tmpDir_+'log1.log  '+_tmpDir_+ 'um2grib2_anl_stdout_'+ _current_date_ +'_' +hr+'hr.log'
-    os.system(cmdStr)  
+    cmdStr = ['mv', _tmpDir_+'log1.log', _tmpDir_+ 'um2grib2_anl_stdout_'+ _current_date_ +'_' +hr+'hr.log']
+    subprocess.call(cmdStr)  
 # end of def convertAnlFiles(...):
 
 
