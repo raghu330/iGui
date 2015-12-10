@@ -707,14 +707,6 @@ def doShuffleVarsInOrder(fpath):
         if name in unOrderedNonPressureLevelVars: orderedVars.append(unOrderedNonPressureLevelVars[name])
     # end of for name, STASH in _orderedVars_['PressureLevel']:
     
-#    unOrderedVars = {(i.standard_name, str(i.attributes['STASH'])): i for i in f}
-#    
-#    # need to store the ordered variables in this empty list
-#    orderedVars = []
-#    for v in _orderedVars_:
-#        if v in unOrderedVars: orderedVars.append(unOrderedVars[v])
-#    # end of for v in pressureOrderedVars:
-    
     newfilefpath = fpath.split(_fext_)[0] + '.grib2'
     # now lets save the ordered variables into same file
     iris.save(orderedVars, newfilefpath)
