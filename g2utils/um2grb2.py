@@ -645,7 +645,7 @@ def doMergeInOrder(ftype, simulated_hr):
     if ftype in ['fcst', 'forecast']:
         ftype_hr = [(ftype, str(hr).zfill(3)) for hr in range(6,241,6)]
     elif ftype in ['anl', 'analysis']:
-        ftype_hr = [(ftype, simulated_hr)]
+        ftype_hr = [(ftype, simulated_hr),]
     ## get the no of created anl/fcst 6hourly files  
     nprocesses = len(ftype_hr)
     
