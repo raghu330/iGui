@@ -706,10 +706,10 @@ def doShuffleVarsInOrderInParallel(ftype, simulated_hr):
             
     global _current_date_, _opPath_, _fext_
     
-    print "Lets re-order and merge all the files!!!"
+    print "Lets re-order variables for all the files!!!"
     #####
     ## 6-hourly Files have been created with extension.
-    ## Now lets do merge of those individual files in order, in parallel mode. 
+    ## Now lets do re-order variables within those individual files, in parallel mode. 
    
     if ftype in ['fcst', 'forecast']:
         ## generate all the forecast filenames w.r.t forecast hours 
@@ -725,7 +725,7 @@ def doShuffleVarsInOrderInParallel(ftype, simulated_hr):
         nprocesses = len(fcstFiles)        
         # parallel begin - 3
         pool = _MyPool(nprocesses)
-        print "Creating %d (non-daemon) workers and jobs in doMergeInOrder process." % nprocesses
+        print "Creating %d (non-daemon) workers and jobs in doShuffleVarsInOrder process." % nprocesses
         results = pool.map(doShuffleVarsInOrder, fcstFiles)   
         
         # closing and joining master pools
@@ -745,70 +745,6 @@ def doShuffleVarsInOrderInParallel(ftype, simulated_hr):
 # end of def doShuffleVarsInOrderInParallel(arg):
     
 
-def doMergeInOrder(arg):
-    ftype, fcst_hr = arg 
-    global _current_date_, _opPath_
-    
-    order = ('pd', 'pb', 'pe')
-    if ftype in ['fcst', 'forecast']:            
-        outfile = 'um_prg' 
-    elif ftype in ['anl', 'analysis']:
-        if fcst_hr == '00': order = ('qwqg00.pp0', 'pd', 'pb', 'pe')            
-        outfile = 'um_ana'
-    # end of if ftype in ['fcst', 'forecast']:    
-    
-    infiles = []
-    for fext in order:
-        infile = ''
-        infile += outfile +'_'+ fcst_hr.zfill(3) +'hr'+ '_' 
-        infile += _current_date_ + '_' + fext + '.grib2'
-        infiles.append(os.path.join(_opPath_, infile))
-    # end of for fext in order:
-    merged_file = outfile +'_'+ fcst_hr.zfill(3) +'hr'+ '_' + _current_date_ + '.grib2'
-    merged_file = os.path.join(_opPath_, merged_file)
-    # merge in order
-
-    mergecmd = ["cdo", "merge"] + infiles + [merged_file] 
-    print "merge command : ", mergecmd
-    subprocess.call(mergecmd)
-    print "merged into ", merged_file
-    
-    time.sleep(2)
-    # remove older files
-    rmcmd = ["rm"] + infiles
-    subprocess.call(rmcmd)
-    print "removed partial files ", infiles
-# end of def doMergeInOrder(arg):
-
-def doMergeInOrderInParallel(ftype, simulated_hr):
-            
-    print "Lets re-order and merge all the files!!!"
-    #####
-    ## 6-hourly Files have been created with extension.
-    ## Now lets do merge of those individual files in order, in parallel mode. 
-   
-    if ftype in ['fcst', 'forecast']:
-        ftype_hr = [(ftype, str(hr).zfill(3)) for hr in range(6,241,6)]        
-        ## get the no of created anl/fcst 6hourly files  
-        nprocesses = len(ftype_hr)        
-        # parallel begin - 3
-        pool = _MyPool(nprocesses)
-        print "Creating %d (non-daemon) workers and jobs in doMergeInOrder process." % nprocesses
-        results = pool.map(doMergeInOrder, ftype_hr)   
-        
-        # closing and joining master pools
-        pool.close()     
-        pool.join()
-        # parallel end - 3    
-    elif ftype in ['anl', 'analysis']:
-        ftype_hr = (ftype, simulated_hr)
-        doMergeInOrder(ftype_hr)
-    # end of if ftype in ['fcst', 'forecast']: 
-    print "Total time taken to convert and re-order all files was: %8.5f seconds \n" % (time.time()-_startT_)
-    
-    return 
-# end of def doMergeInOrderInParallel(arg):
-    
 # Start definition #6
 def doFcstConvert(fname):
     """
