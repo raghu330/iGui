@@ -681,17 +681,17 @@ def doMergeInOrder(arg):
     merged_file = outfile +'_'+ fcst_hr.zfill(3) +'hr'+ '_' + _current_date_ + '.grib2'
     merged_file = os.path.join(_opPath_, merged_file)
     # merge in order
-#    cdo = "/gpfs1/home/Libs/INTEL/CDO/cdo-1.6.4_with_magic++/bin/cdo"
+
     mergecmd = ["cdo", "merge"] + infiles + [merged_file] 
     print "merge command : ", mergecmd
     subprocess.call(mergecmd)
     print "merged into ", merged_file
     
-#    time.sleep(2)
-#    # remove older files
-#    rmcmd = ["rm"] + infiles
-#    subprocess.call(rmcmd)
-#    print "removed partial files ", infiles
+    time.sleep(2)
+    # remove older files
+    rmcmd = ["rm"] + infiles
+    subprocess.call(rmcmd)
+    print "removed partial files ", infiles
 # end of def doMergeInOrder(arg):
 
 def doMergeInOrderInParallel(ftype, simulated_hr):
@@ -700,9 +700,7 @@ def doMergeInOrderInParallel(ftype, simulated_hr):
     #####
     ## 6-hourly Files have been created with extension.
     ## Now lets do merge of those individual files in order, in parallel mode. 
-#    current_dir = os.getcwd()
-#    os.chdir(_opPath_)
-    
+   
     if ftype in ['fcst', 'forecast']:
         ftype_hr = [(ftype, str(hr).zfill(3)) for hr in range(6,241,6)]        
         ## get the no of created anl/fcst 6hourly files  
@@ -720,7 +718,6 @@ def doMergeInOrderInParallel(ftype, simulated_hr):
         ftype_hr = (ftype, simulated_hr)
         doMergeInOrder(ftype_hr)
     # end of if ftype in ['fcst', 'forecast']: 
-#    os.chdir(current_dir)
     print "Total time taken to convert and re-order all files was: %8.5f seconds \n" % (time.time()-_startT_)
     
     return 
@@ -844,12 +841,6 @@ def convertFcstFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr=
     # do re-order and merge files in parallel
     doMergeInOrderInParallel('fcst', hr)
     
-#    time.sleep(2)
-#    # remove partial files
-#    rmcmd = ["rm", "um_prg*pb.grib2", "um_prg*pd.grib2", "um_prg*pe.grib2"]  
-#    subprocess.call(rmcmd)
-#    print "removed partial files ", rmcmd
-
     cmdStr = ['mv', _tmpDir_+'log2.log', _tmpDir_+ 'um2grib2_fcst_stdout_'+ _current_date_ +'_00hr.log']
     subprocess.call(cmdStr)     
 # end of def convertFcstFiles(...):
@@ -897,13 +888,6 @@ def convertAnlFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr='
     # do re-order and merge files in parallel
     doMergeInOrderInParallel('anl', hr)
     
-#    time.sleep(2)
-#    # remove partial files
-#    rmcmd = ["rm", "um_ana*pb.grib2", "um_ana*pd.grib2", 
-#                "um_ana*pe.grib2", "um_ana*qwqg00.pp0.grib2"]  
-#    subprocess.call(rmcmd)
-#    print "removed partial files ", rmcmd
-
     cmdStr = ['mv', _tmpDir_+'log1.log', _tmpDir_+ 'um2grib2_anl_stdout_'+ _current_date_ +'_' +hr+'hr.log']
     subprocess.call(cmdStr)  
 # end of def convertAnlFiles(...):
