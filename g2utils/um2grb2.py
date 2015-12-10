@@ -103,7 +103,7 @@ _inDataPath_ = None
 _opPath_ = None
 _targetGrid_ = None
 _fext_ = '_unOrdered'
-_orderedVars_ = [
+_orderedVars_ = {'PressureLevel': [
 ## Pressure Level Variable names & STASH codes
 ('geopotential_height', 'm01s16i202'),           
 ('relative_humidity', 'm01s16i256'),
@@ -111,9 +111,10 @@ _orderedVars_ = [
 ('air_temperature', 'm01s16i203'),
 ('dew_point_temperature', 'm01s03i250'),
 ('x_wind', 'm01s15i243'), 
-('y_wind', 'm01s15i244'),
+('y_wind', 'm01s15i244'),],
+
 ## Non Pressure Level Variable names & STASH codes
-('surface_air_pressure', 'm01s00i409'),
+'nonPressureLevel': [('surface_air_pressure', 'm01s00i409'),
 ('air_pressure_at_sea_level', 'm01s16i222'),
 ('surface_temperature', 'm01s00i024'),
 ('relative_humidity', 'm01s03i245'), 
@@ -125,6 +126,7 @@ _orderedVars_ = [
 ('x_wind', 'm01s03i209'), 
 ('y_wind', 'm01s03i210'),            
 ('surface_altitude', 'm01s00i033')]
+}
 
 # create a class #1 for capturing stdin, stdout and stderr
 class myLog():
@@ -619,9 +621,10 @@ def regridAnlFcstFiles(arg):
             # end of try:   
             print "regrid done"
             print "To shape", regdCube.shape  
+            
+            # reset the attributes 
             regdCube.attributes = tmpCube.attributes
-            print tmpCube.attributes
-            print regdCube.attributes      
+              
             # make memory free 
             del tmpCube
             
@@ -690,13 +693,27 @@ def doShuffleVarsInOrder(fpath):
     f = iris.load(fpath)
         
     # generate dictionary (standard_name, STASH) as key and cube variable as value
-    unOrderedVars = {(i.standard_name, str(i.attributes['STASH'])): i for i in f}
+    unOrderedPressureLevelVars = {i.standard_name: i for i in f 
+                                        if len(i.coords('pressure')) == 1}
     
+    unOrderedNonPressureLevelVars = list(set(f) - set(unOrderedPressureLevelVars))
     # need to store the ordered variables in this empty list
     orderedVars = []
-    for v in _orderedVars_:
-        if v in unOrderedVars: orderedVars.append(unOrderedVars[v])
-    # end of for v in pressureOrderedVars:
+    for name, STASH in _orderedVars_['PressureLevel']:
+        if name in unOrderedPressureLevelVars: orderedVars.append(unOrderedPressureLevelVars[v])
+    # end of for name, STASH in _orderedVars_['PressureLevel']:
+    
+    for name, STASH in _orderedVars_['nonPressureLevel']:
+        if name in unOrderedNonPressureLevelVars: orderedVars.append(unOrderedNonPressureLevelVars[v])
+    # end of for name, STASH in _orderedVars_['PressureLevel']:
+    
+#    unOrderedVars = {(i.standard_name, str(i.attributes['STASH'])): i for i in f}
+#    
+#    # need to store the ordered variables in this empty list
+#    orderedVars = []
+#    for v in _orderedVars_:
+#        if v in unOrderedVars: orderedVars.append(unOrderedVars[v])
+#    # end of for v in pressureOrderedVars:
     
     newfilefpath = fpath.split(_fext_)[0] + '.grib2'
     # now lets save the ordered variables into same file
