@@ -102,6 +102,29 @@ _tmpDir_ = None
 _inDataPath_ = None
 _opPath_ = None
 _targetGrid_ = None
+_fext_ = '_unOrdered'
+_orderedVars_ = [
+## Pressure Level Variable names & STASH codes
+('geopotential_height', 'm01s16i202'),           
+('relative_humidity', 'm01s16i256'),
+('specific_humidity', 'm01s30i205'),   
+('air_temperature', 'm01s16i203'),
+('dew_point_temperature', 'm01s03i250'),
+('x_wind', 'm01s15i243'), 
+('y_wind', 'm01s15i244'),
+## Non Pressure Level Variable names & STASH codes
+('surface_air_pressure', 'm01s00i409'),
+('air_pressure_at_sea_level', 'm01s16i222'),
+('surface_temperature', 'm01s00i024'),
+('relative_humidity', 'm01s03i245') 
+('specific_humidity', 'm01s03i237'),
+('air_temperature', 'm01s03i236'),
+('high_type_cloud_area_fraction', 'm01s09i205'),
+('medium_type_cloud_area_fraction', 'm01s09i204'),
+('low_type_cloud_area_fraction', 'm01s09i203'), 
+('x_wind', 'm01s03i209'), 
+('y_wind', 'm01s03i210'),            
+('surface_altitude', 'm01s00i033')]
 
 # create a class #1 for capturing stdin, stdout and stderr
 class myLog():
@@ -342,7 +365,6 @@ def getVarInOutFilesDetails(inDataPath, fname, hr):
         varNamesSTASH = [('high_type_cloud_area_fraction', 'm01s09i205'),
                     ('medium_type_cloud_area_fraction', 'm01s09i204'),
                     ('low_type_cloud_area_fraction', 'm01s09i203'),                    
-                    ('geopotential_height', 'm01s16i202'),
                     ('air_temperature', 'm01s03i236'),
                     ('air_pressure_at_sea_level', 'm01s16i222'),
                     ('specific_humidity', 'm01s03i237'),
@@ -517,11 +539,9 @@ def regridAnlFcstFiles(arg):
     This module has been entirely revamped & improved by AAT based on an older and
     serial version by MNRS on 11/16/2015.
     """
-    global _targetGrid_, _current_date_, _startT_, _inDataPath_, _opPath_
+    global _targetGrid_, _current_date_, _startT_, _inDataPath_, _opPath_, _fext_
     
     fpname, hr = arg 
-    
-    fext = fpname.split('_')[-1]
     
     ### if fileName has some extension, then do not add hr to it.
     fileName = fpname + hr if not '.' in fpname else fpname
@@ -621,7 +641,7 @@ def regridAnlFcstFiles(arg):
                 hr = _inDataPath_.split('/')[-1]
             # end of if _inDataPath_.endswith('00'):
             
-            outFn = outfile +'_'+ hr.zfill(3) +'hr'+ '_' + _current_date_ + '_' + fext + '.grib2'
+            outFn = outfile +'_'+ hr.zfill(3) +'hr'+ '_' + _current_date_ + _fext_ + '.grib2'
             outFn = os.path.join(_opPath_, outFn)
             print "Going to be save into ", outFn
             
@@ -658,6 +678,72 @@ def regridAnlFcstFiles(arg):
     print "  Time taken to convert the file: %8.5f seconds \n" %(time.time()-_startT_)
     print " Finished converting file: %s into grib2 format for fcst file: %s \n" %(fileName,hr)
 # end of def regridAnlFcstFiles(fname):
+
+def doShuffleVarsInOrder(fpath):
+    
+    global _orderedVars_, _fext_
+    
+    f = iris.load(fpath)
+        
+    # generate dictionary (standard_name, STASH) as key and cube variable as value
+    unOrderedVars = {(i.standard_name, str(i.attributes['STASH'])): i for i in f}
+    
+    # need to store the ordered variables in this empty list
+    orderedVars = []
+    for v in _orderedVars_:
+        if v in unOrderedVars: orderedVars.append(unOrderedVars[v])
+    # end of for v in pressureOrderedVars:
+    
+    newfilefpath = fpath.split(_fext_)[0] + '.grib2'
+    # now lets save the ordered variables into same file
+    iris.save(orderedVars, newfilefpath)
+    
+    os.remove(fpath)
+    print "Shuffuled the variables in ordered fassion and saved", fpath
+# end of def doShuffleVarsInOrder(fpath):
+
+def doShuffleVarsInOrderInParallel(ftype, simulated_hr):
+            
+    global _current_date_, _opPath_, _fext_
+    
+    print "Lets re-order and merge all the files!!!"
+    #####
+    ## 6-hourly Files have been created with extension.
+    ## Now lets do merge of those individual files in order, in parallel mode. 
+   
+    if ftype in ['fcst', 'forecast']:
+        ## generate all the forecast filenames w.r.t forecast hours 
+        outfile = 'um_prg'
+        fcstFiles = []
+        for hr in range(6,241,6):
+            outFn = outfile +'_'+ hr.zfill(3) +'hr'+ '_' + _current_date_ + _fext_ + '.grib2'
+            outFn = os.path.join(_opPath_, outFn)
+            fcstFiles.append(outFn)
+        # end of for hr in range(6,241,6):
+         
+        ## get the no of created anl/fcst 6hourly files  
+        nprocesses = len(fcstFiles)        
+        # parallel begin - 3
+        pool = _MyPool(nprocesses)
+        print "Creating %d (non-daemon) workers and jobs in doMergeInOrder process." % nprocesses
+        results = pool.map(doShuffleVarsInOrder, fcstFiles)   
+        
+        # closing and joining master pools
+        pool.close()     
+        pool.join()
+        # parallel end - 3    
+    elif ftype in ['anl', 'analysis']:
+        ## generate the analysis filename w.r.t simulated_hr
+        outfile = 'um_ana'
+        outFn = outfile +'_'+ simulated_hr.zfill(3) +'hr'+ '_' + _current_date_ + _fext_ + '.grib2'
+        outFn = os.path.join(_opPath_, outFn)
+        doShuffleVarsInOrder(outFn)
+    # end of if ftype in ['fcst', 'forecast']: 
+    print "Total time taken to convert and re-order all files was: %8.5f seconds \n" % (time.time()-_startT_)
+    
+    return 
+# end of def doShuffleVarsInOrderInParallel(arg):
+    
 
 def doMergeInOrder(arg):
     ftype, fcst_hr = arg 
@@ -838,8 +924,8 @@ def convertFcstFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr=
     # do convert for forecast files 
     convertFilesInParallel(fcst_fnames, ftype='fcst')   
     
-    # do re-order and merge files in parallel
-    doMergeInOrderInParallel('fcst', hr)
+    # do re-order variables within files in parallel
+    doShuffleVarsInOrder('fcst', hr)
     
     cmdStr = ['mv', _tmpDir_+'log2.log', _tmpDir_+ 'um2grib2_fcst_stdout_'+ _current_date_ +'_00hr.log']
     subprocess.call(cmdStr)     
@@ -885,8 +971,8 @@ def convertAnlFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr='
     # do convert for analysis files
     convertFilesInParallel(anl_fnames, ftype='anl')   
     
-    # do re-order and merge files in parallel
-    doMergeInOrderInParallel('anl', hr)
+    # do re-order variables within files in parallel
+    doShuffleVarsInOrder('anl', hr)
     
     cmdStr = ['mv', _tmpDir_+'log1.log', _tmpDir_+ 'um2grib2_anl_stdout_'+ _current_date_ +'_' +hr+'hr.log']
     subprocess.call(cmdStr)  
