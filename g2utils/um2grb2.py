@@ -618,7 +618,10 @@ def regridAnlFcstFiles(arg):
                 continue
             # end of try:   
             print "regrid done"
-            print "To shape", regdCube.shape        
+            print "To shape", regdCube.shape  
+            regdCube.attributes = tmpCube.attributes
+            print tmpCube.attributes
+            print regdCube.attributes      
             # make memory free 
             del tmpCube
             
@@ -644,6 +647,7 @@ def regridAnlFcstFiles(arg):
             outFn = outfile +'_'+ hr.zfill(3) +'hr'+ '_' + _current_date_ + _fext_ + '.grib2'
             outFn = os.path.join(_opPath_, outFn)
             print "Going to be save into ", outFn
+            
             
             try:
                 iris.save(regdCube, outFn, append=True)
