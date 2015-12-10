@@ -861,7 +861,7 @@ def convertFcstFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr=
     convertFilesInParallel(fcst_fnames, ftype='fcst')   
     
     # do re-order variables within files in parallel
-    doShuffleVarsInOrder('fcst', hr)
+    doShuffleVarsInOrderInParallel('fcst', hr)
     
     cmdStr = ['mv', _tmpDir_+'log2.log', _tmpDir_+ 'um2grib2_fcst_stdout_'+ _current_date_ +'_00hr.log']
     subprocess.call(cmdStr)     
@@ -908,7 +908,7 @@ def convertAnlFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr='
     convertFilesInParallel(anl_fnames, ftype='anl')   
     
     # do re-order variables within files in parallel
-    doShuffleVarsInOrder('anl', hr)
+    doShuffleVarsInOrderInParallel('anl', hr)
     
     cmdStr = ['mv', _tmpDir_+'log1.log', _tmpDir_+ 'um2grib2_anl_stdout_'+ _current_date_ +'_' +hr+'hr.log']
     subprocess.call(cmdStr)  
