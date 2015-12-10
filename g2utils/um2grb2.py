@@ -628,7 +628,7 @@ def doMergeInOrder(arg):
     
     time.sleep(2)
     # remove older files
-    rmcmd = "rm -rf " + infiles
+    rmcmd = "rm " + infiles
     os.system(rmcmd)
     print "removed partial files ", infiles
 # end of def doMergeInOrder(arg):
