@@ -685,11 +685,11 @@ def doMergeInOrder(arg):
     subprocess.call(mergecmd)
     print "merged into ", merged_file
     
-    time.sleep(2)
-    # remove older files
-    rmcmd = ["rm"] + infiles
-    subprocess.call(rmcmd)
-    print "removed partial files ", infiles
+#    time.sleep(2)
+#    # remove older files
+#    rmcmd = ["rm"] + infiles
+#    subprocess.call(rmcmd)
+#    print "removed partial files ", infiles
 # end of def doMergeInOrder(arg):
 
 def doMergeInOrderInParallel(ftype, simulated_hr):
@@ -842,6 +842,12 @@ def convertFcstFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr=
     # do re-order and merge files in parallel
     doMergeInOrderInParallel('fcst', hr)
     
+    time.sleep(2)
+    # remove partial files
+    rmcmd = ["rm", "um_prg*pb.grib2", "um_prg*pd.grib2", "um_prg*pe.grib2"]  
+    subprocess.call(rmcmd)
+    print "removed partial files ", rmcmd
+
     cmdStr = ['mv', _tmpDir_+'log2.log', _tmpDir_+ 'um2grib2_fcst_stdout_'+ _current_date_ +'_00hr.log']
     subprocess.call(cmdStr)     
 # end of def convertFcstFiles(...):
@@ -889,6 +895,13 @@ def convertAnlFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr='
     # do re-order and merge files in parallel
     doMergeInOrderInParallel('anl', hr)
     
+    time.sleep(2)
+    # remove partial files
+    rmcmd = ["rm", "um_ana*pb.grib2", "um_ana*pd.grib2", 
+                "um_ana*pe.grib2", "um_ana*qwqg00.pp0.grib2"]  
+    subprocess.call(rmcmd)
+    print "removed partial files ", rmcmd
+
     cmdStr = ['mv', _tmpDir_+'log1.log', _tmpDir_+ 'um2grib2_anl_stdout_'+ _current_date_ +'_' +hr+'hr.log']
     subprocess.call(cmdStr)  
 # end of def convertAnlFiles(...):
