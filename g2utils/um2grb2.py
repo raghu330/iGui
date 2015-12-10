@@ -604,7 +604,7 @@ def regridAnlFcstFiles(arg):
 
 def doMergeInOrder(ftype, simulated_hr):
     
-    def _mergeFiles(arg):
+    def mergeFiles(arg):
         ftype, fcst_hr = arg 
         global _current_date_
         
@@ -633,7 +633,7 @@ def doMergeInOrder(ftype, simulated_hr):
         rmcmd = "rm -rf " + infiles
         os.system(rmcmd)
         print "removed older files ", infiles
-    # end of def _mergeFiles(arg):
+    # end of def mergeFiles(arg):
     
     print "Lets re-order and merge all the files!!!"
     #####
@@ -643,21 +643,21 @@ def doMergeInOrder(ftype, simulated_hr):
     os.chdir(_opPath_)
     
     if ftype in ['fcst', 'forecast']:
-        ftype_hr = [(ftype, str(hr).zfill(3)) for hr in range(6,241,6)]
+        ftype_hr = [(ftype, str(hr).zfill(3)) for hr in range(6,241,6)]        
+        ## get the no of created anl/fcst 6hourly files  
+        nprocesses = len(ftype_hr)        
+        # parallel begin - 3
+        pool = _MyPool(nprocesses)
+        print "Creating %d (non-daemon) workers and jobs in doMergeInOrder process." % nprocesses
+        results = pool.map(mergeFiles, ftype_hr)    
+        # closing and joining master pools
+        pool.close()     
+        pool.join()
+        # parallel end - 3    
     elif ftype in ['anl', 'analysis']:
-        ftype_hr = [(ftype, simulated_hr),]
-    ## get the no of created anl/fcst 6hourly files  
-    nprocesses = len(ftype_hr)
-    
-    # parallel begin - 3
-    pool = _MyPool(nprocesses)
-    print "Creating %d (non-daemon) workers and jobs in doMergeInOrder process." % nprocesses
-    results = pool.map(_mergeFiles, ftype_hr)    
-    # closing and joining master pools
-    pool.close()     
-    pool.join()
-    # parallel end - 3
-    
+        ftype_hr = (ftype, simulated_hr)
+        mergeFiles(ftype_hr)
+    # end of if ftype in ['fcst', 'forecast']: 
     os.chdir(current_dir)
     print "Total time taken to convert and re-order %d files was: %8.5f seconds \n" %(len(fnames),
                                                                             (time.time()-_startT_))
