@@ -568,7 +568,7 @@ def regridAnlFcstFiles(arg):
             
             # get the varibale iris cube by applying variable name constraint, 
             # variable stash code constraint and forecast hour 
-            tmpCube = cubes.extract(varConstraint & STASHConstraint & iris.Constraint(forecast_period=fhr))
+            tmpCube = cubes.extract(varConstraint & STASHConstraint & iris.Constraint(forecast_period=fhr))[0]
             print "extrad end", infile, fhr, varName
             if do6HourlyMean and (tmpCube.coords('forecast_period')[0].shape[0] > 1):              
                 # grab the variable which is f(t,z,y,x)
