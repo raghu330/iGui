@@ -700,11 +700,11 @@ def doShuffleVarsInOrder(fpath):
     # need to store the ordered variables in this empty list
     orderedVars = []
     for name, STASH in _orderedVars_['PressureLevel']:
-        if name in unOrderedPressureLevelVars: orderedVars.append(unOrderedPressureLevelVars[v])
+        if name in unOrderedPressureLevelVars: orderedVars.append(unOrderedPressureLevelVars[name])
     # end of for name, STASH in _orderedVars_['PressureLevel']:
     
     for name, STASH in _orderedVars_['nonPressureLevel']:
-        if name in unOrderedNonPressureLevelVars: orderedVars.append(unOrderedNonPressureLevelVars[v])
+        if name in unOrderedNonPressureLevelVars: orderedVars.append(unOrderedNonPressureLevelVars[name])
     # end of for name, STASH in _orderedVars_['PressureLevel']:
     
 #    unOrderedVars = {(i.standard_name, str(i.attributes['STASH'])): i for i in f}
