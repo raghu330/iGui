@@ -164,7 +164,7 @@ def getVarInOutFilesDetails(inDataPath, fname, hr):
     :param inDataPath: data path which contains data and hour.
     :param fname: filename of the fieldsfile that has been passed as a string.
 
-    :return: varIndx: Cube index indicating the variable as an array
+    :return: varNamesSTASH: a list of tuples (Variable name and its STASH code) 
     :return: varLvls: No. of vertical levels in the cube as an array/scalar - integer (number)
     :return: fcstHours: Time slices of the cube as an array/scalar - integer (number)
     :return: do6HourlyMean: Logical expression as either True or False, indicating
@@ -176,6 +176,7 @@ def getVarInOutFilesDetails(inDataPath, fname, hr):
     Started by MNRS and improved by AAT!
     
     Updated : 07-12-2015
+    Updated : 10-12-2015
     """
     
     hr = int(hr)
@@ -193,8 +194,16 @@ def getVarInOutFilesDetails(inDataPath, fname, hr):
     
     ##### ANALYSIS FILE BEGIN     
     if fname.startswith('qwqg00'):                   # qwqg00
-        varIndx = [0, 1, 2, 3, 4, 5, 7, 8]
-        ### need to add 6 in varIdx, but its not working in wgrib2
+        varNamesSTASH = [('geopotential_height', 'm01s16i202'),
+            ('air_temperature', 'm01s16i203'),
+            ('relative_humidity', 'm01s16i256'),
+            ('x_wind', 'm01s15i243'), 
+            ('y_wind', 'm01s15i244'),
+            ('air_pressure_at_sea_level', 'm01s16i222'),
+            ('surface_air_pressure', 'm01s00i409'),
+            ('surface_altitude', 'm01s00i033')]
+        ### need to add 'upward_air_velocity' in varIdx, 
+        #### but its not working in wgrib2
         varLvls = 0        
         # the cube contains Instantaneous data at every 3-hours.        
         # but we need to extract every 6th hours instantaneous.
@@ -202,8 +211,11 @@ def getVarInOutFilesDetails(inDataPath, fname, hr):
         do6HourlyMean = False
             
     elif fname.startswith('umglca_pb'):              # umglca_pb
-        # varIndx = [19, 24, 26, 30, 31, 32, 33, 34] # needed
-        varIndx = [ 23, 25, 29 ] # available for use
+        # varNamesSTASH = [19, 24, 26, 30, 31, 32, 33, 34] # needed
+        # available for use
+        varNamesSTASH = [('dew_point_temperature', 'm01s03i250'),
+                    ('surface_temperature', 'm01s00i024'),
+                    ('relative_humidity', 'm01s03i245')] # available for use
         varLvls = 0        
         # the cube contains Instantaneous data at every 3-hours.        
         # but we need to extract every 6th hours instantaneous.
@@ -213,11 +225,17 @@ def getVarInOutFilesDetails(inDataPath, fname, hr):
     elif fname.startswith('umglca_pd'):            # umglca_pd
         # consider variable
         if inDataPathHour == '00':
-            varIndx = [4] 
+            varNamesSTASH = [('specific_humidity', 'm01s30i205'),] 
             # rest of them (i.e 1,2,3,5,6,7) from taken already from qwqg00 file.
         else:
-            varIndx = [1,2,3,4,6,7] # 5 is not working
-            
+            # upward wind is not working
+           varNamesSTASH = [('geopotential_height', 'm01s16i202'),
+                       ('air_temperature', 'm01s16i203'), 
+                       ('specific_humidity', 'm01s30i205'),
+                       ('relative_humidity', 'm01s16i256'),                        
+                       ('x_wind', 'm01s15i243'),
+                       ('y_wind', 'm01s15i244')]
+                     
         # qwqg00 file variables are more correct than this short forecast vars.
         varLvls = 18
         # the cube contains Instantaneous data at every 3-hours.
@@ -227,11 +245,26 @@ def getVarInOutFilesDetails(inDataPath, fname, hr):
         
     elif fname.startswith('umglca_pe'):            # umglca_pe
         if inDataPathHour == '00':
-            varIndx = [5,6,7,9,11,14,16]
-            # rest of them (i.e 4, 12) from taken already from qwqg00 file.
+            varNamesSTASH = [('high_type_cloud_area_fraction', 'm01s09i205'), 
+                        ('medium_type_cloud_area_fraction', 'm01s09i204'),
+                        ('low_type_cloud_area_fraction', 'm01s09i203'),
+                        ('air_temperature', 'm01s03i236'),                    
+                        ('specific_humidity', 'm01s03i237'),                        
+                        ('x_wind', 'm01s03i209'), 
+                        ('y_wind', 'm01s03i210')]
+            # rest of them (i.e 'air_pressure_at_sea_level', 
+            #'surface_air_pressure') from taken already from qwqg00 file.
         else:
-            varIndx = [4,5,6,7,9,11,12,14,16]
-
+            varNamesSTASH = [('high_type_cloud_area_fraction', 'm01s09i205'), 
+                        ('medium_type_cloud_area_fraction', 'm01s09i204'),
+                        ('low_type_cloud_area_fraction', 'm01s09i203'),
+                        ('air_temperature', 'm01s03i236'),              
+                        ('air_pressure_at_sea_level', 'm01s16i222'),                              
+                        ('specific_humidity', 'm01s03i237'),
+                        ('surface_air_pressure', 'm01s00i409'),
+                        ('x_wind', 'm01s03i209'), 
+                        ('y_wind', 'm01s03i210')]
+                    
         ### varIdx 10 is omited, since it has two zero. i think we need to take previous file average or current hour aver.
         varLvls = 0        
         # the cube contains Instantaneous data at every 1-hours.
@@ -241,10 +274,10 @@ def getVarInOutFilesDetails(inDataPath, fname, hr):
 
     elif fname.startswith('umglca_pf'):             # umglca_pf
         # other vars (these vars will be created as 6-hourly averaged)
-        # varIndx = [4, 23, 24, 25, 26, 28, 31, 32, 33, 34, 35, 36]
+        # varNamesSTASH = [4, 23, 24, 25, 26, 28, 31, 32, 33, 34, 35, 36]
         # rain and snow vars (these vars will be created as 6-hourly accumutated)
-        varIndx2 = [12, 13, 17, 18, 20, 21]         # all vars
-        varIndx = varIndx2 #+ varIndx2
+        varNamesSTASH2 = [12, 13, 17, 18, 20, 21]         # all vars
+        varNamesSTASH = varNamesSTASH2 #+ varNamesSTASH2
         varLvls = 0        
         # the cube contains data of every 3-hourly average or accumutated.
         # but we need to make only every 6th hourly average or accumutated.
@@ -280,8 +313,10 @@ def getVarInOutFilesDetails(inDataPath, fname, hr):
     
     ##### FORECAST FILE BEGIN
     elif fname.startswith('umglaa_pb'):              # umglaa_pb
-        # varIndx = [19, 24, 26, 30, 31, 32, 33, 34] # needed
-        varIndx = [ 24, 26, 30 ] # available for use
+        # varNamesSTASH = [19, 24, 26, 30, 31, 32, 33, 34] # needed        
+        varNamesSTASH = [('dew_point_temperature', 'm01s03i250'),
+                    ('surface_temperature', 'm01s00i024'),
+                    ('relative_humidity', 'm01s03i245')] 
         varLvls = 0        
         # the cube contains Instantaneous data at every 3-hours.        
         # but we need to extract every 6th hours instantaneous.
@@ -290,8 +325,13 @@ def getVarInOutFilesDetails(inDataPath, fname, hr):
         
     elif fname.startswith('umglaa_pd'):            # umglaa_pd
         # consider variable
-        # varIndx = 5 # needed
-        varIndx = [1,2,3,4, 6,7] # available for use
+        # varNamesSTASH = 'upward_air_velocity' # needed
+        varNamesSTASH = [('geopotential_height', 'm01s16i202'),
+                    ('air_temperature', 'm01s16i203'),  
+                    ('specific_humidity', 'm01s30i205'),                    
+                    ('relative_humidity', 'm01s16i256'),                    
+                    ('x_wind', 'm01s15i243'),
+                    ('y_wind', 'm01s15i244')]
         varLvls = 18
         # the cube contains Instantaneous data at every 3-hours.
         # but we need to extract only every 6th hours instantaneous.
@@ -299,7 +339,16 @@ def getVarInOutFilesDetails(inDataPath, fname, hr):
         do6HourlyMean = False
         
     elif fname.startswith('umglaa_pe'):            # umglaa_pe
-        varIndx = [1,4,5,7,8,10,12,13,14,16]
+        varNamesSTASH = [('high_type_cloud_area_fraction', 'm01s09i205'),
+                    ('medium_type_cloud_area_fraction', 'm01s09i204'),
+                    ('low_type_cloud_area_fraction', 'm01s09i203'),                    
+                    ('geopotential_height', 'm01s16i202'),
+                    ('air_temperature', 'm01s03i236'),
+                    ('air_pressure_at_sea_level', 'm01s16i222'),
+                    ('specific_humidity', 'm01s03i237'),
+                    ('surface_air_pressure', 'm01s00i409'),
+                    ('x_wind', 'm01s03i209'), 
+                    ('y_wind', 'm01s03i210')]
         varLvls = 0        
         # the cube contains Instantaneous data at every 1-hours.
         # but we need to extract only every 6th hours instantaneous.
@@ -308,10 +357,10 @@ def getVarInOutFilesDetails(inDataPath, fname, hr):
 
     elif fname.startswith('umglaa_pf'):             # umglaa_pf
         # other vars (these vars will be created as 6-hourly averaged)
-        # varIndx = [4, 23, 24, 25, 26, 28, 31, 32, 33, 34, 35, 36]
+        # varNamesSTASH = [4, 23, 24, 25, 26, 28, 31, 32, 33, 34, 35, 36]
         # rain and snow vars (these vars will be created as 6-hourly accumutated)
-        varIndx2 = [12, 13, 17, 18, 20, 21]         # all vars
-        varIndx = varIndx2 #+ varIndx2
+        varNamesSTASH2 = [12, 13, 17, 18, 20, 21]         # all vars
+        varNamesSTASH = varNamesSTASH2 #+ varNamesSTASH2
         varLvls = 0        
         # the cube contains data of every 3-hourly average or accumutated.
         # but we need to make only every 6th hourly average or accumutated.
@@ -323,7 +372,7 @@ def getVarInOutFilesDetails(inDataPath, fname, hr):
         raise ValueError("Filename not implemented yet!")
     # end if-loop
 
-    return varIndx, varLvls, fcstHours, do6HourlyMean, infile, outfile
+    return varNamesSTASH, varLvls, fcstHours, do6HourlyMean, infile, outfile
 # end of definition #2
 
 # start definition #3
@@ -480,7 +529,7 @@ def regridAnlFcstFiles(arg):
     fname = os.path.join(_inDataPath_, fileName)        
     
     # call definition to get variable indices
-    varIndices, varLvls, fcstHours, do6HourlyMean, infile, outfile = getVarInOutFilesDetails(_inDataPath_,
+    varNamesSTASH, varLvls, fcstHours, do6HourlyMean, infile, outfile = getVarInOutFilesDetails(_inDataPath_,
                                                                                              fileName, hr)
     
     if not os.path.isfile(fname): 
@@ -496,21 +545,30 @@ def regridAnlFcstFiles(arg):
     accumutationType = ['rain', 'precip', 'snow']
     
     # open for-loop-1 -- for all the variables in the cube
-    for varIdx in varIndices:
-        stdNm, _, _, _, _ = getCubeAttr(cubes[varIdx])
+    for varName, varSTASH in varNamesSTASH:
+        # define variable name constraint
+        varConstraint = iris.Constraint(name=varName)
+        # define varibale stash code constraint
+        STASHConstraint = iris.AttributeConstraint(STASH=varSTASH)
+        # get the standard_name of variable 
+        stdNm = cubes.extract(varConstraint & STASHConstraint)[0].standard_name
         print "stdNm", stdNm, fileName
         if stdNm is None:
             print "Unknown variable standard_name for varIdx[%d] of %s. So skipping it" % (varIdx, fileName)
             continue
         # end of if 'unknown' in stdNm: 
         print "  Working on variable: %s \n" %stdNm
+        
         for fhr in fcstHours:
             # loop-2 -- runs through the selected time slices - synop hours                        
             print "   Working on forecast time: ", fhr            
             # grab the variable which is f(t,z,y,x)
             # tmpCube corresponds to each variable for the SYNOP hours
             print "extract start", infile, fhr, varIdx
-            tmpCube = cubes[varIdx].extract(iris.Constraint(forecast_period=fhr))
+            
+            # get the varibale iris cube by applying variable name constraint, 
+            # variable stash code constraint and forecast hour 
+            tmpCube = cubes.extract(varConstraint & STASHConstraint & iris.Constraint(forecast_period=fhr))
             print "extrad end", infile, fhr, varIdx
             if do6HourlyMean and (tmpCube.coords('forecast_period')[0].shape[0] > 1):              
                 # grab the variable which is f(t,z,y,x)
@@ -529,7 +587,6 @@ def regridAnlFcstFiles(arg):
                 tmpCube = cubeAverager(tmpCube, action, intervals='6-hourly')            
             # end ofif do6HourlyMean and tmpCube.coords('forecast_period')[0].shape[0] > 1:     
 
-#            _, _, _, lat0, lon0 = getCubeAttr(tmpCube)
             # interpolate it 0,25 deg resolution by setting up sample points based on coord
             print "\n    Regridding data to 0.25x0.25 deg spatial resolution \n"
             print "From shape", tmpCube.shape
