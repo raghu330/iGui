@@ -202,7 +202,7 @@ def getVarInOutFilesDetails(inDataPath, fname, hr):
             ('air_pressure_at_sea_level', 'm01s16i222'),
             ('surface_air_pressure', 'm01s00i409'),
             ('surface_altitude', 'm01s00i033')]
-        ### need to add 'upward_air_velocity' in varIdx, 
+        ### need to add 'upward_air_velocity' , 
         #### but its not working in wgrib2
         varLvls = 0        
         # the cube contains Instantaneous data at every 3-hours.        
@@ -554,7 +554,7 @@ def regridAnlFcstFiles(arg):
         stdNm = cubes.extract(varConstraint & STASHConstraint)[0].standard_name
         print "stdNm", stdNm, fileName
         if stdNm is None:
-            print "Unknown variable standard_name for varIdx[%d] of %s. So skipping it" % (varIdx, fileName)
+            print "Unknown variable standard_name for '%s' of %s. So skipping it" % (varName, fileName)
             continue
         # end of if 'unknown' in stdNm: 
         print "  Working on variable: %s \n" %stdNm
@@ -564,12 +564,12 @@ def regridAnlFcstFiles(arg):
             print "   Working on forecast time: ", fhr            
             # grab the variable which is f(t,z,y,x)
             # tmpCube corresponds to each variable for the SYNOP hours
-            print "extract start", infile, fhr, varIdx
+            print "extract start", infile, fhr, varName
             
             # get the varibale iris cube by applying variable name constraint, 
             # variable stash code constraint and forecast hour 
             tmpCube = cubes.extract(varConstraint & STASHConstraint & iris.Constraint(forecast_period=fhr))
-            print "extrad end", infile, fhr, varIdx
+            print "extrad end", infile, fhr, varName
             if do6HourlyMean and (tmpCube.coords('forecast_period')[0].shape[0] > 1):              
                 # grab the variable which is f(t,z,y,x)
                 # tmpCube corresponds to each variable for the SYNOP hours from
@@ -651,7 +651,7 @@ def regridAnlFcstFiles(arg):
 #            gribapi.grib_set_long(gribid, "subCentre", 0)  # exeter is not in the spec
             # os.system('source /gpfs2/home/umtid/test/grb_local_section.sh')
         # end of for fhr in fcstHours:
-    # end of for ii in range(len(varIdx)):
+    # end of for varName, varSTASH in varNamesSTASH:
     # make memory free
     del cubes
     
