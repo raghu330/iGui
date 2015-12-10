@@ -661,7 +661,7 @@ def regridAnlFcstFiles(arg):
 
 def doMergeInOrder(arg):
     ftype, fcst_hr = arg 
-    global _current_date_
+    global _current_date_, _opPath_
     
     order = ('pd', 'pb', 'pe')
     if ftype in ['fcst', 'forecast']:            
@@ -676,12 +676,13 @@ def doMergeInOrder(arg):
         infile = ''
         infile += outfile +'_'+ fcst_hr.zfill(3) +'hr'+ '_' 
         infile += _current_date_ + '_' + fext + '.grib2'
-        infiles.append(infile)
+        infiles.append(os.path.join(_opPath_, infile))
     # end of for fext in order:
     merged_file = outfile +'_'+ fcst_hr.zfill(3) +'hr'+ '_' + _current_date_ + '.grib2'
+    merged_file = os.path.join(_opPath_, merged_file)
     # merge in order
-    cdo = "/gpfs1/home/Libs/INTEL/CDO/cdo-1.6.4_with_magic++/bin/cdo"
-    mergecmd = [cdo, "merge"] + infiles + [merged_file] 
+#    cdo = "/gpfs1/home/Libs/INTEL/CDO/cdo-1.6.4_with_magic++/bin/cdo"
+    mergecmd = ["cdo", "merge"] + infiles + [merged_file] 
     print "merge command : ", mergecmd
     subprocess.call(mergecmd)
     print "merged into ", merged_file
@@ -699,8 +700,8 @@ def doMergeInOrderInParallel(ftype, simulated_hr):
     #####
     ## 6-hourly Files have been created with extension.
     ## Now lets do merge of those individual files in order, in parallel mode. 
-    current_dir = os.getcwd()
-    os.chdir(_opPath_)
+#    current_dir = os.getcwd()
+#    os.chdir(_opPath_)
     
     if ftype in ['fcst', 'forecast']:
         ftype_hr = [(ftype, str(hr).zfill(3)) for hr in range(6,241,6)]        
@@ -719,7 +720,7 @@ def doMergeInOrderInParallel(ftype, simulated_hr):
         ftype_hr = (ftype, simulated_hr)
         doMergeInOrder(ftype_hr)
     # end of if ftype in ['fcst', 'forecast']: 
-    os.chdir(current_dir)
+#    os.chdir(current_dir)
     print "Total time taken to convert and re-order all files was: %8.5f seconds \n" % (time.time()-_startT_)
     
     return 
