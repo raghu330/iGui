@@ -659,8 +659,7 @@ def doMergeInOrder(ftype, simulated_hr):
         mergeFiles(ftype_hr)
     # end of if ftype in ['fcst', 'forecast']: 
     os.chdir(current_dir)
-    print "Total time taken to convert and re-order %d files was: %8.5f seconds \n" %(len(fnames),
-                                                                            (time.time()-_startT_))
+    print "Total time taken to convert and re-order %d files was: %8.5f seconds \n" % (time.time()-_startT_)
     
     return 
 # end of def doMergeInOrder(arg):
