@@ -602,39 +602,39 @@ def regridAnlFcstFiles(arg):
     print " Finished converting file: %s into grib2 format for fcst file: %s \n" %(fileName,hr)
 # end of def regridAnlFcstFiles(fname):
 
-def doMergeInOrder(ftype, simulated_hr):
+def doMergeInOrder(arg):
+    ftype, fcst_hr = arg 
+    global _current_date_
     
-    def mergeFiles(arg):
-        ftype, fcst_hr = arg 
-        global _current_date_
-        
-        order = ('pb', 'pd', 'pe')
-        if ftype in ['fcst', 'forecast']:            
-            outfile = 'um_prg' 
-        elif ftype in ['anl', 'analysis']:
-            if fcst_hr == '00': order = ('qwqg00.pp0', 'pb', 'pd', 'pe')            
-            outfile = 'um_ana'
-        # end of if ftype in ['fcst', 'forecast']:    
-        
-        infiles = ''
-        for fext in order:
-            infiles += outfile +'_'+ fcst_hr.zfill(3) +'hr'+ '_' + _current_date_ + '_' 
-            infiles += fext + '.grib2' + '  '*4
-        # end of for fext in order:
-        merged_file = outfile +'_'+ fcst_hr.zfill(3) +'hr'+ '_' + _current_date_ + '.grib2'
-        # merge in order
-        mergecmd = "cdo merge " + infiles + "   " + merged_file 
-        print "merge command : ", mergecmd
-        os.system(mergecmd)
-        print "merged into ", merged_file
-        
-        time.sleep(2)
-        # remove older files
-        rmcmd = "rm -rf " + infiles
-        os.system(rmcmd)
-        print "removed older files ", infiles
-    # end of def mergeFiles(arg):
+    order = ('pb', 'pd', 'pe')
+    if ftype in ['fcst', 'forecast']:            
+        outfile = 'um_prg' 
+    elif ftype in ['anl', 'analysis']:
+        if fcst_hr == '00': order = ('qwqg00.pp0', 'pb', 'pd', 'pe')            
+        outfile = 'um_ana'
+    # end of if ftype in ['fcst', 'forecast']:    
     
+    infiles = ''
+    for fext in order:
+        infiles += outfile +'_'+ fcst_hr.zfill(3) +'hr'+ '_' + _current_date_ + '_' 
+        infiles += fext + '.grib2' + '  '*4
+    # end of for fext in order:
+    merged_file = outfile +'_'+ fcst_hr.zfill(3) +'hr'+ '_' + _current_date_ + '.grib2'
+    # merge in order
+    mergecmd = "cdo merge " + infiles + "   " + merged_file 
+    print "merge command : ", mergecmd
+    os.system(mergecmd)
+    print "merged into ", merged_file
+    
+    time.sleep(2)
+    # remove older files
+    rmcmd = "rm -rf " + infiles
+    os.system(rmcmd)
+    print "removed partial files ", infiles
+# end of def doMergeInOrder(arg):
+
+def doMergeInOrderInParallel(ftype, simulated_hr):
+            
     print "Lets re-order and merge all the files!!!"
     #####
     ## 6-hourly Files have been created with extension.
@@ -649,20 +649,21 @@ def doMergeInOrder(ftype, simulated_hr):
         # parallel begin - 3
         pool = _MyPool(nprocesses)
         print "Creating %d (non-daemon) workers and jobs in doMergeInOrder process." % nprocesses
-        results = pool.map(mergeFiles, ftype_hr)    
+        results = pool.map(doMergeInOrder, ftype_hr)   
+        
         # closing and joining master pools
         pool.close()     
         pool.join()
         # parallel end - 3    
     elif ftype in ['anl', 'analysis']:
         ftype_hr = (ftype, simulated_hr)
-        mergeFiles(ftype_hr)
+        doMergeInOrder(ftype_hr)
     # end of if ftype in ['fcst', 'forecast']: 
     os.chdir(current_dir)
-    print "Total time taken to convert and re-order %d files was: %8.5f seconds \n" % (time.time()-_startT_)
+    print "Total time taken to convert and re-order all files was: %8.5f seconds \n" % (time.time()-_startT_)
     
     return 
-# end of def doMergeInOrder(arg):
+# end of def doMergeInOrderInParallel(arg):
     
 # Start definition #6
 def doFcstConvert(fname):
@@ -780,7 +781,7 @@ def convertFcstFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr=
     convertFilesInParallel(fcst_fnames, ftype='fcst')   
     
     # do re-order and merge files in parallel
-    doMergeInOrder('fcst', hr)
+    doMergeInOrderInParallel('fcst', hr)
     
     cmdStr = 'mv '+_tmpDir_+'log2.log  '+_tmpDir_+ 'um2grib2_fcst_stdout_'+ _current_date_ +'_00hr.log'
     os.system(cmdStr)     
@@ -827,7 +828,7 @@ def convertAnlFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr='
     convertFilesInParallel(anl_fnames, ftype='anl')   
     
     # do re-order and merge files in parallel
-    doMergeInOrder('anl', hr)
+    doMergeInOrderInParallel('anl', hr)
     
     cmdStr = 'mv '+_tmpDir_+'log1.log  '+_tmpDir_+ 'um2grib2_anl_stdout_'+ _current_date_ +'_' +hr+'hr.log'
     os.system(cmdStr)  
