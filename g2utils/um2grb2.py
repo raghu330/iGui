@@ -606,11 +606,11 @@ def doMergeInOrder(arg):
     ftype, fcst_hr = arg 
     global _current_date_
     
-    order = ('pb', 'pd', 'pe')
+    order = ('pd', 'pb', 'pe')
     if ftype in ['fcst', 'forecast']:            
         outfile = 'um_prg' 
     elif ftype in ['anl', 'analysis']:
-        if fcst_hr == '00': order = ('qwqg00.pp0', 'pb', 'pd', 'pe')            
+        if fcst_hr == '00': order = ('qwqg00.pp0', 'pd', 'pb', 'pe')            
         outfile = 'um_ana'
     # end of if ftype in ['fcst', 'forecast']:    
     
