@@ -116,7 +116,7 @@ _orderedVars_ = [
 ('surface_air_pressure', 'm01s00i409'),
 ('air_pressure_at_sea_level', 'm01s16i222'),
 ('surface_temperature', 'm01s00i024'),
-('relative_humidity', 'm01s03i245') 
+('relative_humidity', 'm01s03i245'), 
 ('specific_humidity', 'm01s03i237'),
 ('air_temperature', 'm01s03i236'),
 ('high_type_cloud_area_fraction', 'm01s09i205'),
