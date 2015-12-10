@@ -714,7 +714,7 @@ def doShuffleVarsInOrder(fpath):
     newfilefpath = fpath.split(_fext_)[0] + '.grib2'
     # now lets save the ordered variables into same file
     iris.save(orderedVars, newfilefpath)
-    
+    # remove the older file 
     os.remove(fpath)
     print "Shuffuled the variables in ordered fassion and saved", fpath
 # end of def doShuffleVarsInOrder(fpath):
