@@ -692,11 +692,15 @@ def doShuffleVarsInOrder(fpath):
     
     f = iris.load(fpath)
         
-    # generate dictionary (standard_name, STASH) as key and cube variable as value
-    unOrderedPressureLevelVars = {i.standard_name: i for i in f 
-                                        if len(i.coords('pressure')) == 1}
-    
+    # get only the pressure coordinate variables
+    unOrderedPressureLevelVars = [i for i in f if len(i.coords('pressure')) == 1]
+    # get only the non pressure coordinate variables
     unOrderedNonPressureLevelVars = list(set(f) - set(unOrderedPressureLevelVars))
+    
+    # generate dictionary (standard_name, STASH) as key and cube variable as value
+    unOrderedPressureLevelVars = {i.standard_name: i for i in unOrderedPressureLevelVars}
+    unOrderedNonPressureLevelVars = {i.standard_name: i for i in unOrderedNonPressureLevelVars}
+    
     # need to store the ordered variables in this empty list
     orderedVars = []
     for name, STASH in _orderedVars_['PressureLevel']:
