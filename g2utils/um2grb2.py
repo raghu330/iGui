@@ -31,17 +31,18 @@ This code conforms to pep8 standards and KISS philosophy.
 
 Contributors & their roles:
 #1. Mr. Raghavendra S. Mupparthy (MNRS) - Integrator, TIAV Lead, I/C, overseer & code humor!
-#2. Mr. Arulalan T (AAT) - Chief coder, optimiser, parelleliser and THE shebang!
+#2. Mr. Arulalan T (AAT) - Chief coder, optimiser, parelleliser, deployment and THE shebang!
 #3. Dr. Devjyoti Dutta (DJ) - ECMWF-GRIB2 Metadata manipulator
 #4. Dr. Saji Mohandas (SM) - TIFF lead/expertise and shell-template.
 
 Testing & their roles:
 #1. Mr. Kuldeep Sharma (KS) - Main tester for visual integrety vis-a-vis GrADS
-#2. Mr. Raghavendra S. Mupparthy (MNRS) - Implementor
-#3. Dr. Raghavendra Ashrit (RA) - Testing for RIMES and overall integrity testing
-#4. Dr. Jayakumar A. (JA) - Comparison with the CAWCR convertor and specifictions needs
-#5. Dr. Saji Mohandad (SM) - Control test (GrADS & subset.tcl) & Future Functional Description
-#6. Mr. Gopal Raman Iyengar (GRI) - Overseer
+#2. Mr. Arulalan T (AAT) - Implementor #1
+#3. Mr. Raghavendra S. Mupparthy (MNRS) - Implementor #2
+#4. Dr. Raghavendra Ashrit (RA) - Testing for RIMES and overall integrity testing
+#5. Dr. Jayakumar A. (JA) - Comparison with the CAWCR convertor and specifictions needs
+#6. Dr. Saji Mohandad (SM) - Control test (GrADS & subset.tcl) & Future Functional Description
+#7. Mr. Gopal Raman Iyengar (GRI) - Overseer
 
 Acknowledgments:
 #1. Dr. Rakhi R, Dr. Jayakumar A, Dr. Saji Mohandas and Mr. Bangaru (Ex-IBM) for N768.
@@ -68,14 +69,20 @@ Code History:
                     by using short forecast files by chossing either instantaneous
                     and average/sum by using past 6 hour's short forecast (AAT)                     
                     Version - 5.0. Ready for alpha release v1.0a (AAT)
+12. Dec 11th, 2015: Global MP.LOCK added to avoid communication errors in overwriting
+                    /appending grib2 files. (AAT)
+                    Few unused modules removed & code cleaning (MNRS): List=netCDF4, types
 
 References:
 1. Iris. v1.8.1 03-Jun-2015. Met Office. UK. https://github.com/SciTools/iris/archive/v1.8.1.tar.gz
-2. myLog() based on http://mail.python.org/pipermail/python-list/2007-May/438106.html
+2. myLog() based on http://mail.python.org/pipermail/python-list/2007-May/438106.html <-- Class#1
 3. Data understanding: /gpfs2/home/umfcst/ShortJobs/Subset-WRF/ncum_subset_24h.sh
-4. Saji M. (2014), "Utility to convert UM fieldsfile output to NCEP GRIB1 format:
+4. Creating Child processes: http://stackoverflow.com/questions/6974695/python-process-pool-non-daemonic
+   # class #3
+5. Saji M. (2014), "Utility to convert UM fieldsfile output to NCEP GRIB1 format:
                     A User Guide", NMRF/TR/01/2014, April 2014, pp. 51, available at
                     http://www.ncmrwf.gov.in/umfld2grib.pdf
+6. Arulalan, https://tuxcoder.wordpress.com/2011/08/31/how-to-install-g2ctl-pl-and-wgrib2-in-linux/
 
 Copyright: ESSO-NCMRWF,MoES, 2015-2016.
 """
@@ -85,18 +92,17 @@ import os, sys, time, subprocess
 import numpy, scipy
 import iris
 import gribapi
-import netCDF4
 import iris.unit as unit
 import multiprocessing as mp
 import multiprocessing.pool as mppool       # We must import this explicitly, it is not imported by the top-level multiprocessing                                                 module.
-import types
 import datetime
 # End of importing business
-iris.FUTURE.strict_grib_load = True
 
 # -- Start coding
+iris.FUTURE.strict_grib_load = True
 # create global lock object
 lock = mp.Lock()
+
 # other global variables
 _current_date_ = None
 _startT_ = None
@@ -105,23 +111,24 @@ _inDataPath_ = None
 _opPath_ = None
 _targetGrid_ = None
 _fext_ = '_unOrdered'
+
+# -- Create an ORDER Dictionary!
 # global ordered variables (the order we want to write into grib2)
 _orderedVars_ = {'PressureLevel': [
-## Pressure Level Variable names & STASH codes
+# Pressure Level Variable names & STASH codes
 ('geopotential_height', 'm01s16i202'),           
 ('relative_humidity', 'm01s16i256'),
 ('specific_humidity', 'm01s30i205'),   
 ('air_temperature', 'm01s16i203'),
 ('x_wind', 'm01s15i243'), 
 ('y_wind', 'm01s15i244')],
-
-## Non Pressure Level Variable names & STASH codes
+# Non Pressure Level Variable names & STASH codes
 'nonPressureLevel': [
 ('surface_air_pressure', 'm01s00i409'),
 ('air_pressure', 'm01s00i409'),  # this 'air_pressure' is duplicate name of 
 # 'surface_air_pressure', why because after written into anl grib2, the 
 # standard_name gets changed from surface_air_pressure to air_pressure only
-# for analysis, not for fcst!  
+# for analysis, not for fcst! Ref: Saji M
 ('air_pressure_at_sea_level', 'm01s16i222'),
 ('surface_temperature', 'm01s00i024'),
 ('relative_humidity', 'm01s03i245'), 
@@ -136,6 +143,7 @@ _orderedVars_ = {'PressureLevel': [
 ('surface_altitude', 'm01s00i033')],
 }
 
+# -- Create classes
 # create a class #1 for capturing stdin, stdout and stderr
 class myLog():
     """
@@ -156,14 +164,33 @@ class myLog():
         self.log.close()
 # end of class #1
 
-## Start definition files
+# create a class #2 to initiate mp daemon processes
+class _NoDaemonProcess(mp.Process):
+    # make 'daemon' attribute always return False
+    # A class created by AAT
+    def _get_daemon(self):
+        return False
+    def _set_daemon(self, value):
+        pass
+    daemon = property(_get_daemon, _set_daemon)
+# end of class #2
+
+# create a class #3 to set-up worker-pools
+class _MyPool(mppool.Pool):
+    # We sub-class multiprocessing.pool. Pool instead of multiprocessing.Pool
+    # because the latter is only a wrapper function, not a proper class.
+    # refer the link in ref#4 to invoke child processes
+    # A class created by AAT
+    Process = _NoDaemonProcess
+# end of class #3
+
+# -- Start definition files..
 # start definition #1
 def getCubeData(umFname):
     """
     This definition module reads the input file name and its location as a
     string and it returns the data as an Iris Cube.
     An upgraded version uses a GUI to read the file.
-
     :param umFname: UM fieldsfile filename passed as a string
     :return: Data for corresponding data file in Iris cube format
     """
@@ -172,20 +199,6 @@ def getCubeData(umFname):
     
     return cubes
 # end of definition #1
-
-def getYdayStr(today):
-    """
-    This module returns yesterday's date-time string 
-        :today: today date string must follow pattern of yyyymmdd.
-    
-        :return: yesterday's date in string format of yyyymmdd.
-    """
-    tDay = datetime.datetime.strptime(today, "%Y%m%d")
-    lag = datetime.timedelta(days=1)
-    yDay = (tDay - lag).strftime('%Y%m%d')
-
-    return yDay
-# end of def getYdayStr(today):
 
 # start definition #2
 def getVarInOutFilesDetails(inDataPath, fname, hr):
@@ -196,8 +209,8 @@ def getVarInOutFilesDetails(inDataPath, fname, hr):
     - Improvements & Edits by AAT & MNRS
     :param inDataPath: data path which contains data and hour.
     :param fname: filename of the fieldsfile that has been passed as a string.
-
-    :return: varNamesSTASH: a list of tuples (Variable name and its STASH code) 
+    :param hr: forecast hour for which the attribute variables are sought.
+    :return: varNamesSTASH: a list of tuples (Variable name and its STASH code)
     :return: varLvls: No. of vertical levels in the cube as an array/scalar - integer (number)
     :return: fcstHours: Time slices of the cube as an array/scalar - integer (number)
     :return: do6HourlyMean: Logical expression as either True or False, indicating
@@ -217,6 +230,7 @@ def getVarInOutFilesDetails(inDataPath, fname, hr):
     infile = os.path.join(inDataPath, fname)    
     
     inDataPathHour = inDataPath.split('/')[-1]      
+    # check frpm where the analysis file is being made.
     if fname.startswith('umglaa'):
         outfile = 'um_prg' 
     elif fname.startswith(('umglca', 'qwqg00')):
@@ -236,7 +250,7 @@ def getVarInOutFilesDetails(inDataPath, fname, hr):
             ('surface_air_pressure', 'm01s00i409'),
             ('surface_altitude', 'm01s00i033')]
         ### need to add 'upward_air_velocity' , 
-        #### but its not working in wgrib2
+        #### but its not working in wgrib2!
         varLvls = 0        
         # the cube contains Instantaneous data at every 3-hours.        
         # but we need to extract every 6th hours instantaneous.
@@ -341,7 +355,6 @@ def getVarInOutFilesDetails(inDataPath, fname, hr):
         # infile path (it could be current date and past 6 hour for 06,12,18 hours.  
         # but it set yesterday date and past 6 hour for 00 hour)
         infile = os.path.join(ipath, fname)    
-    
     ##### ANALYSIS FILE END
     
     ##### FORECAST FILE BEGIN
@@ -431,18 +444,19 @@ def getCubeAttr(tmpCube):
 # start definition #4
 def cubeAverager(tmpCube, action='mean', intervals='hourly'):
     """
-    This module was added by AAT to return a data variable depending on the nature of the field.
+    This module return an Iris cube formatted data depending on the nature of the field
+    & do6HourlyMean. - AAT
     :param tmpCube:     The temporary cube data (in Iris format) with non-singleton time dimension
     :param action:      mean| sum (accumulated fields are summed and instantaneous are averaged).
     :param intervals:   A simple string representing represting the time & binning aspect.
     :return: meanCube:  An Iris formatted cube date containing the resultant data either as
                         averaged or summed.
-    ACK:
     Started and initiated by AAT on 11/16/2015 and minor correction & standardization by MNRS on
     11/29/15.
     """
     meanCube = tmpCube[0]
     tlen = len(tmpCube.coord('time').points)
+    # average through the time steps for all accumulate fields
     for ti in range(1, tlen):
         meanCube = iris.analysis.maths.add(meanCube, tmpCube[ti])
     # end of for ti in range(1, len(tmpCube)):
@@ -510,33 +524,13 @@ def cubeAverager(tmpCube, action='mean', intervals='hourly'):
     
     # return mean cube 
     return meanCube
-# end of def cubeAverager(tmpCube):
-
-# create a class #2 to initiate mp daemon processes
-class _NoDaemonProcess(mp.Process):
-    # make 'daemon' attribute always return False
-    # A class created by AAT
-    def _get_daemon(self):
-        return False
-    def _set_daemon(self, value):
-        pass
-    daemon = property(_get_daemon, _set_daemon)
-# end of class #2
-
-# create a class #3 to set-up worker-pools
-class _MyPool(mppool.Pool):
-    # We sub-class multiprocessing.pool. Pool instead of multiprocessing.Pool
-    # because the latter is only a wrapper function, not a proper class.
-    ### http://stackoverflow.com/questions/6974695/python-process-pool-non-daemonic
-    ### refer the above link to invoke child processes
-    # A class created by AAT
-    Process = _NoDaemonProcess
-# end of class #3
+# end of def cubeAverager(tmpCube): def #4
 
 # start definition #5
 def regridAnlFcstFiles(arg):
     """
     New Module by AAT:
+    What does this module do?
     This module has been rewritten entirely by AAT for optimization as an embarassingly-
     parallel problem! It also checks the std names from Iris cube format with the
     CF-convention and it regrids the data to 0.25x0.25 regular grid using linear
@@ -547,7 +541,8 @@ def regridAnlFcstFiles(arg):
     :return: regridded cube saved as GRIB2 file! TANGIBLE!
     ACK:
     This module has been entirely revamped & improved by AAT based on an older and
-    serial version by MNRS on 11/16/2015.
+    serial version by MNRS on 11/16/2015 (mm/dd/yyyy).
+    Lock added by AAT on 12/11/2015 (mm/dd/yyyy).
     """
     global _targetGrid_, _current_date_, _startT_, _inDataPath_, _opPath_, _fext_, lock
     
@@ -597,7 +592,7 @@ def regridAnlFcstFiles(arg):
             print "extract start", infile, fhr, varName
             
             # get the varibale iris cube by applying variable name constraint, 
-            # variable stash code constraint and forecast hour 
+            # variable stash code constraint and forecast hour -- Revamped by AAT
             tmpCube = cubes.extract(varConstraint & STASHConstraint & iris.Constraint(forecast_period=fhr))[0]
             print "extrad end", infile, fhr, varName
             if do6HourlyMean and (tmpCube.coords('forecast_period')[0].shape[0] > 1):              
@@ -693,9 +688,9 @@ def regridAnlFcstFiles(arg):
             
             ## edit location section in grib2 to point to the right RMC
             # gribapi.grib_set(outFn,'centre','28')
-#            gribapi.grib_set_long(gribid, "centre", 28)  # RMC of India
-#            gribapi.grib_set_long(gribid, "subCentre", 0)  # exeter is not in the spec
-            # os.system('source /gpfs2/home/umtid/test/grb_local_section.sh')
+            gribapi.grib_set_long(gribid, "centre", 28)  # RMC of India
+            gribapi.grib_set_long(gribid, "subCentre", 0)  # exeter is not in the spec
+            os.system('source /gpfs2/home/umtid/test/grb_local_section.sh')
         # end of for fhr in fcstHours:
     # end of for varName, varSTASH in varNamesSTASH:
     # make memory free
@@ -703,19 +698,35 @@ def regridAnlFcstFiles(arg):
     
     print "  Time taken to convert the file: %8.5f seconds \n" %(time.time()-_startT_)
     print " Finished converting file: %s into grib2 format for fcst file: %s \n" %(fileName,hr)
-# end of def regridAnlFcstFiles(fname):
+# end of def regridAnlFcstFiles(fname): def #5
 
+# start definition #6
+def getYdayStr(today):
+    """
+    This module returns yesterday's date-time string
+        :param: today: today's date string in yyyymmdd format.
+        :return: yesterday's date in string format of yyyymmdd.
+    """
+    tDay = datetime.datetime.strptime(today, "%Y%m%d")
+    lag = datetime.timedelta(days=1)
+    yDay = (tDay - lag).strftime('%Y%m%d')
+
+    return yDay
+# end of def getYdayStr(today).. #6
+
+# start definition #7
 def doShuffleVarsInOrder(fpath):
     """
-    order the variables and create new grib2 files;
-    delete the older shuffled variables grib2 files.
-    create ctl, idx files using g2ctl.pl, gribmap scripts for the ordered grib2 files.
-    
+    What does this definition do?
+    This module has been rewritten by AAT to address the way order of variables are written
+    (It delete the older shuffled variables grib2 files) while creating a new grib2 files.
+    It also generates GrADS ctl file for easier access with GrADS and idx file for use
+    with g2ctl.pl and gribmap scripts for the ordered grib2 files.
     Arulalan/T
     11-12-2015
     """
     global _orderedVars_, _fext_
-    
+    # checks
     try:
         f = iris.load(fpath)
     except gribapi.GribInternalError as e:
@@ -728,8 +739,10 @@ def doShuffleVarsInOrder(fpath):
         print "ALERT!!! ERROR!!! couldn't read grib2 file to re-order", e
         return 
     # end of try:
+
     # get only the pressure coordinate variables
     unOrderedPressureLevelVars = [i for i in f if len(i.coords('pressure')) == 1]
+
     # get only the non pressure coordinate variables
     unOrderedNonPressureLevelVars = list(set(f) - set(unOrderedPressureLevelVars))
     
@@ -748,6 +761,7 @@ def doShuffleVarsInOrder(fpath):
     # end of for name, STASH in _orderedVars_['PressureLevel']:
     
     newfilefpath = fpath.split(_fext_)[0] + '.grib2'
+
     # now lets save the ordered variables into same file
     try:
         iris.save(orderedVars, newfilefpath)
@@ -778,11 +792,20 @@ def doShuffleVarsInOrder(fpath):
         raise ValueError("unknown file type while executing g2ctl.pl!!")
     
     print "Successfully created control and index file using g2ctl !", newfilefpath+'.ctl'
-    
-# end of def doShuffleVarsInOrder(fpath):
+# end definition #7 -- doShuffleVarsInOrder(fpath):
 
+# start definition #8
 def doShuffleVarsInOrderInParallel(ftype, simulated_hr):
-            
+    """
+    What does this definition do?
+    This definition re-rders/shuffles the way the variables are written
+    based on the type of the input file - forecast or analysis! and the
+    hour it is based on.
+    Written by AAT
+    :param ftype:
+    :param simulated_hr:
+    :return: None
+    """
     global _current_date_, _opPath_, _fext_
     
     print "Lets re-order variables for all the files!!!"
@@ -791,7 +814,8 @@ def doShuffleVarsInOrderInParallel(ftype, simulated_hr):
     ## Now lets do re-order variables within those individual files, in parallel mode. 
    
     if ftype in ['fcst', 'forecast']:
-        ## generate all the forecast filenames w.r.t forecast hours 
+        ## generate all the forecast filenames w.r.t forecast hours
+        # BY THE WAY: all forecast files are prg (which stands for prognostic!)
         outfile = 'um_prg'
         fcstFiles = []
         for hr in range(6,241,6):
@@ -821,16 +845,18 @@ def doShuffleVarsInOrderInParallel(ftype, simulated_hr):
     print "Total time taken to convert and re-order all files was: %8.5f seconds \n" % (time.time()-_startT_)
     
     return 
-# end of def doShuffleVarsInOrderInParallel(arg):
+# end definition #8 -- doShuffleVarsInOrderInParallel(arg):
     
-
-# Start definition #6
+# Start definition #9
 def doFcstConvert(fname):
     """
     New Module by AAT:
-    This module has been rewritten entirely by AAT for optimization as an embarassingly-
-    parallel problem! This module acts as the main program to feed the filenames as a
-    child process to a multiprocessing thread as a daemon process.
+    What does this module dd?
+    This module creates sub-processes or child-processes for each forecast hour
+    as an embarassingly parallel problem. This is THE main program to feed a filename
+    and its individual/single variable as a child process to a MP thread/daemon process
+    defined by the     filename of interest that has to be divided into time-parallel
+    problem.
     :param fname: Name of the FF filename in question as a "string"
     :return: Nothing! TANGIBLE!
     """
@@ -847,9 +873,9 @@ def doFcstConvert(fname):
     inner_pool.close() 
     inner_pool.join()
     # parallel end
-# end def doFcstConvert(fname):
+# end definition #9 -- doFcstConvert(fname):
 
-
+# Start definition #10
 def doAnlConvert(fname):
     """
     New Module by AAT:
@@ -857,14 +883,14 @@ def doAnlConvert(fname):
     parallel problem! This module acts as the main program to feed the filenames as a
     child process to a multiprocessing thread as a daemon process.
     :param fname: Name of the FF filename in question as a "string"
+    :param "fcst hr" as string HHH
     :return: Nothing! TANGIBLE!
     """
     
     regridAnlFcstFiles((fname, '000'))  
-# end def doAnlConvert(fname):
+# end definition #10 -- doAnlConvert(fname):
 
-
-# Start the convertFilesInParallel function
+# Start definition # 11 the convertFilesInParallel function
 def convertFilesInParallel(fnames, ftype):
     """
     convertFilesInParallel function calling all the sub-functions
@@ -899,11 +925,24 @@ def convertFilesInParallel(fnames, ftype):
     print "Total time taken to convert %d files was: %8.5f seconds \n" %(len(fnames),(time.time()-_startT_))
     
     return
-# end of def convertFilesInParallel(fnames):
+# end of definition #11 -- convertFilesInParallel(fnames):
 
-
+# start definition #12
 def convertFcstFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr='00'):
-       
+    """
+    What does this definition do?
+    This definition is meant to manage the inout filename, outpath and the date
+    and hour for which it has to work on. This is the basic module that calls/logs
+    the process.
+    - Initiated and Written by AAT
+    :param inPath:
+    :param outPath:
+    :param tmpPath:
+    :param date:
+    :param hr:
+    :return:
+    """
+
     global _targetGrid_, _current_date_, _startT_, _tmpDir_, _inDataPath_, _opPath_
     
     # forecast filenames partial name
@@ -944,10 +983,21 @@ def convertFcstFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr=
     
     cmdStr = ['mv', _tmpDir_+'log2.log', _tmpDir_+ 'um2grib2_fcst_stdout_'+ _current_date_ +'_00hr.log']
     subprocess.call(cmdStr)     
-# end of def convertFcstFiles(...):
+# end of definition #12 -- convertFcstFiles(...):
 
-
+# start definition #13
 def convertAnlFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr='00'):
+    """
+    What does this definition do?
+    This module creates the analysis files <- Ref to Dr. Saji! as simple as that!
+    Created by AAT!
+    :param inPath:
+    :param outPath:
+    :param tmpPath:
+    :param date:
+    :param hr:
+    :return:
+    """
        
     global _targetGrid_, _current_date_, _startT_, _tmpDir_, _inDataPath_, _opPath_
     
@@ -993,7 +1043,7 @@ def convertAnlFiles(inPath, outPath, tmpPath, date=time.strftime('%Y%m%d'), hr='
     subprocess.call(cmdStr)  
 # end of def convertAnlFiles(...):
 
-
+####### Older code-base for later amnesia-attack!
 ## feeder!
 #if __name__ == '__main__':
 #    
