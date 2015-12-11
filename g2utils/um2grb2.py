@@ -109,17 +109,22 @@ _orderedVars_ = {'PressureLevel': [
 ('relative_humidity', 'm01s16i256'),
 ('specific_humidity', 'm01s30i205'),   
 ('air_temperature', 'm01s16i203'),
-('dew_point_temperature', 'm01s03i250'),
 ('x_wind', 'm01s15i243'), 
-('y_wind', 'm01s15i244'),],
+('y_wind', 'm01s15i244'),]
 
 ## Non Pressure Level Variable names & STASH codes
-'nonPressureLevel': [('surface_air_pressure', 'm01s00i409'),
+'nonPressureLevel': [
+('surface_air_pressure', 'm01s00i409'),
+('air_pressure', 'm01s00i409'),  # this 'air_pressure' is duplicate name of 
+# 'surface_air_pressure', why because after written into anl grib2, the 
+# standard_name gets changed from surface_air_pressure to air_pressure only
+# for analysis, not for fcst!  
 ('air_pressure_at_sea_level', 'm01s16i222'),
 ('surface_temperature', 'm01s00i024'),
 ('relative_humidity', 'm01s03i245'), 
 ('specific_humidity', 'm01s03i237'),
 ('air_temperature', 'm01s03i236'),
+('dew_point_temperature', 'm01s03i250'),
 ('high_type_cloud_area_fraction', 'm01s09i205'),
 ('medium_type_cloud_area_fraction', 'm01s09i204'),
 ('low_type_cloud_area_fraction', 'm01s09i203'), 
@@ -650,8 +655,7 @@ def regridAnlFcstFiles(arg):
             outFn = outfile +'_'+ hr.zfill(3) +'hr'+ '_' + _current_date_ + _fext_ + '.grib2'
             outFn = os.path.join(_opPath_, outFn)
             print "Going to be save into ", outFn
-            
-            
+                        
             try:
                 iris.save(regdCube, outFn, append=True)
             except iris.exceptions.TranslationError as e:
@@ -690,8 +694,18 @@ def doShuffleVarsInOrder(fpath):
     
     global _orderedVars_, _fext_
     
-    f = iris.load(fpath)
-        
+    try:
+        f = iris.load(fpath)
+    except gribapi.GribInternalError as e:
+        if str(e) == "Wrong message length":
+            print "ALERT!!!! ERROR!!! Couldn't read grib2 file to re-order", e
+        else:
+            print "ALERT!!! ERROR!!! couldn't read grib2 file to re-order", e
+        return 
+    except Exception as e:
+        print "ALERT!!! ERROR!!! couldn't read grib2 file to re-order", e
+        return 
+    # end of try:
     # get only the pressure coordinate variables
     unOrderedPressureLevelVars = [i for i in f if len(i.coords('pressure')) == 1]
     # get only the non pressure coordinate variables
@@ -713,7 +727,13 @@ def doShuffleVarsInOrder(fpath):
     
     newfilefpath = fpath.split(_fext_)[0] + '.grib2'
     # now lets save the ordered variables into same file
-    iris.save(orderedVars, newfilefpath)
+    try:
+        iris.save(orderedVars, newfilefpath)
+    except Exception as e:
+        print "ALERT !!! Error while saving orderd variables into grib2!! %s" % str(e)
+        print " So skipping this without saving data"
+        return
+    # end of try:
     # remove the older file 
     os.remove(fpath)
     print "Shuffuled the variables in ordered fassion and saved", fpath
