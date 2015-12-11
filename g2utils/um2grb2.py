@@ -691,7 +691,14 @@ def regridAnlFcstFiles(arg):
 # end of def regridAnlFcstFiles(fname):
 
 def doShuffleVarsInOrder(fpath):
+    """
+    order the variables and create new grib2 files;
+    delete the older shuffled variables grib2 files.
+    create ctl, idx files using g2ctl.pl, gribmap scripts for the ordered grib2 files.
     
+    Arulalan/T
+    11-12-2015
+    """
     global _orderedVars_, _fext_
     
     try:
@@ -736,7 +743,26 @@ def doShuffleVarsInOrder(fpath):
     # end of try:
     # remove the older file 
     os.remove(fpath)
-    print "Shuffuled the variables in ordered fassion and saved", fpath
+    
+    print "Created the variables in ordered fassion and saved into", newfilefpath
+    
+    ## g2ctl.pl usage option refer the below link 
+    ## https://tuxcoder.wordpress.com/2011/08/31/how-to-install-g2ctl-pl-and-wgrib2-in-linux/
+    g2ctl = "/gpfs2/home/umtid/Softwares/grib2ctl/g2ctl.pl"
+    gribmap = "/gpfs1/home/Libs/GNU/GRADS/grads-2.0.2.oga.1/Contents/gribmap"
+    if 'um_ana' in newfilefpath:
+        # create ctl & idx files for analysis file 
+        subprocess.call([g2ctl, 0, newfilefpath, '>', newfilefpath+'.ctl'])
+        subprocess.call([gribmap, 0, '-i', newfilefpath+'.ctl'])
+    elif 'um_prg' in newfilefpath:
+        # create ctl & idx files for forecast file
+        subprocess.call([g2ctl, newfilefpath, '>', newfilefpath+'.ctl'])
+        subprocess.call([gribmap, '-i', newfilefpath+'.ctl'])
+    else:
+        raise ValueError("unknown file type while executing g2ctl.pl!!")
+    
+    print "Successfully created control and index file using g2ctl !", newfilefpath+'.ctl'
+    
 # end of def doShuffleVarsInOrder(fpath):
 
 def doShuffleVarsInOrderInParallel(ftype, simulated_hr):
