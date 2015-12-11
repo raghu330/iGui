@@ -90,9 +90,9 @@ import iris.unit as unit
 import multiprocessing as mp
 import multiprocessing.pool as mppool       # We must import this explicitly, it is not imported by the top-level multiprocessing                                                 module.
 import types
-
 import datetime
 # End of importing business
+iris.FUTURE.strict_grib_load = True
 
 # -- Start coding
 
@@ -733,7 +733,7 @@ def doShuffleVarsInOrderInParallel(ftype, simulated_hr):
         outfile = 'um_prg'
         fcstFiles = []
         for hr in range(6,241,6):
-            outFn = outfile +'_'+ hr.zfill(3) +'hr'+ '_' + _current_date_ + _fext_ + '.grib2'
+            outFn = outfile +'_'+ str(hr).zfill(3) +'hr'+ '_' + _current_date_ + _fext_ + '.grib2'
             outFn = os.path.join(_opPath_, outFn)
             fcstFiles.append(outFn)
         # end of for hr in range(6,241,6):
@@ -752,7 +752,7 @@ def doShuffleVarsInOrderInParallel(ftype, simulated_hr):
     elif ftype in ['anl', 'analysis']:
         ## generate the analysis filename w.r.t simulated_hr
         outfile = 'um_ana'
-        outFn = outfile +'_'+ simulated_hr.zfill(3) +'hr'+ '_' + _current_date_ + _fext_ + '.grib2'
+        outFn = outfile +'_'+ str(simulated_hr).zfill(3) +'hr'+ '_' + _current_date_ + _fext_ + '.grib2'
         outFn = os.path.join(_opPath_, outFn)
         doShuffleVarsInOrder(outFn)
     # end of if ftype in ['fcst', 'forecast']: 
