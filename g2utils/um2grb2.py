@@ -95,7 +95,8 @@ import datetime
 iris.FUTURE.strict_grib_load = True
 
 # -- Start coding
-
+# create lock object
+lock = mp.Lock()
 _current_date_ = None
 _startT_ = None
 _tmpDir_ = None
@@ -546,7 +547,7 @@ def regridAnlFcstFiles(arg):
     This module has been entirely revamped & improved by AAT based on an older and
     serial version by MNRS on 11/16/2015.
     """
-    global _targetGrid_, _current_date_, _startT_, _inDataPath_, _opPath_, _fext_
+    global _targetGrid_, _current_date_, _startT_, _inDataPath_, _opPath_, _fext_, lock
     
     fpname, hr = arg 
     
@@ -656,9 +657,7 @@ def regridAnlFcstFiles(arg):
             outFn = os.path.join(_opPath_, outFn)
             print "Going to be save into ", outFn
                         
-            try:
-                # create lock object
-                lock = mp.Lock()
+            try:                
                 # lock other threads / processors from being access same file 
                 # to write other variables
                 lock.acquire()
@@ -688,7 +687,7 @@ def regridAnlFcstFiles(arg):
             # end of try:
             print "saved"
             # make memory free 
-            del regdCube, lock
+            del regdCube
             
             ## edit location section in grib2 to point to the right RMC
             # gribapi.grib_set(outFn,'centre','28')
