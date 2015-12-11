@@ -16,7 +16,7 @@ inPath = /gpfs3/home/umfcst/NCUM/fcst/
 outPath = /gpfs4/home/umtid/um2grb2/GRIB-parallel/
 
 ## working directory (used to create temporary log files)
-tmpPath = /gpfs2/home/umtid/test/
+tmpPath = /gpfs4/home/umtid/tmp/um2grb2/logs/
 
 ## By default date takes argument as YYYYMMDD (which means it assume today's date)
 ## But user can specify the different date by follwing the same format.
