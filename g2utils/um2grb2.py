@@ -571,6 +571,9 @@ def regridAnlFcstFiles(arg):
     
     accumutationType = ['rain', 'precip', 'snow']
     
+    # create lock object
+    lock = mp.Lock()
+    
     # open for-loop-1 -- for all the variables in the cube
     for varName, varSTASH in varNamesSTASH:
         # define variable name constraint
@@ -657,12 +660,22 @@ def regridAnlFcstFiles(arg):
             print "Going to be save into ", outFn
                         
             try:
+                # lock other threads / processors from being access same file 
+                # to write other variables
+                lock.acquire()
                 iris.save(regdCube, outFn, append=True)
+                # release the lock, let other threads/processors access this file.
+                lock.release()
             except iris.exceptions.TranslationError as e:
                 if str(e) == "The vertical-axis coordinate(s) ('soil_model_level_number') are not recognised or handled.":  
                     regdCube.remove_coord('soil_model_level_number') 
                     print "Removed soil_model_level_number from cube, due to error %s" % str(e)
+                    # lock other threads / processors from being access same file 
+                    # to write other variables
+                    lock.acquire()
                     iris.save(regdCube, outFn, append=True)
+                    # release the lock, let other threads/processors access this file.
+                    lock.release()
                 else:
                     print "ALERT !!! Got error while saving, %s" % str(e)
                     print " So skipping this without saving data"
