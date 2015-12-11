@@ -750,13 +750,14 @@ def doShuffleVarsInOrder(fpath):
     ## https://tuxcoder.wordpress.com/2011/08/31/how-to-install-g2ctl-pl-and-wgrib2-in-linux/
     g2ctl = "/gpfs2/home/umtid/Softwares/grib2ctl/g2ctl.pl"
     gribmap = "/gpfs1/home/Libs/GNU/GRADS/grads-2.0.2.oga.1/Contents/gribmap"
+    ctlfile = open(newfilefpath+'.ctl', 'w')
     if 'um_ana' in newfilefpath:
         # create ctl & idx files for analysis file 
-        subprocess.call([g2ctl, '-0', newfilefpath, '>', newfilefpath+'.ctl'])
+        subprocess.call([g2ctl, '-0', newfilefpath], stdout=ctlfile)
         subprocess.call([gribmap, '-0', '-i', newfilefpath+'.ctl'])
     elif 'um_prg' in newfilefpath:
         # create ctl & idx files for forecast file
-        subprocess.call([g2ctl, newfilefpath, '>', newfilefpath+'.ctl'])
+        subprocess.call([g2ctl, newfilefpath], stdout=ctlfile)
         subprocess.call([gribmap, '-i', newfilefpath+'.ctl'])
     else:
         raise ValueError("unknown file type while executing g2ctl.pl!!")
