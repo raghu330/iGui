@@ -95,8 +95,9 @@ import datetime
 iris.FUTURE.strict_grib_load = True
 
 # -- Start coding
-# create lock object
+# create global lock object
 lock = mp.Lock()
+# other global variables
 _current_date_ = None
 _startT_ = None
 _tmpDir_ = None
@@ -104,6 +105,7 @@ _inDataPath_ = None
 _opPath_ = None
 _targetGrid_ = None
 _fext_ = '_unOrdered'
+# global ordered variables (the order we want to write into grib2)
 _orderedVars_ = {'PressureLevel': [
 ## Pressure Level Variable names & STASH codes
 ('geopotential_height', 'm01s16i202'),           
