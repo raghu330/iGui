@@ -95,7 +95,9 @@ import datetime
 iris.FUTURE.strict_grib_load = True
 
 # -- Start coding
-
+# create global lock object
+lock = mp.Lock()
+# other global variables
 _current_date_ = None
 _startT_ = None
 _tmpDir_ = None
@@ -103,6 +105,7 @@ _inDataPath_ = None
 _opPath_ = None
 _targetGrid_ = None
 _fext_ = '_unOrdered'
+# global ordered variables (the order we want to write into grib2)
 _orderedVars_ = {'PressureLevel': [
 ## Pressure Level Variable names & STASH codes
 ('geopotential_height', 'm01s16i202'),           
@@ -546,7 +549,7 @@ def regridAnlFcstFiles(arg):
     This module has been entirely revamped & improved by AAT based on an older and
     serial version by MNRS on 11/16/2015.
     """
-    global _targetGrid_, _current_date_, _startT_, _inDataPath_, _opPath_, _fext_
+    global _targetGrid_, _current_date_, _startT_, _inDataPath_, _opPath_, _fext_, lock
     
     fpname, hr = arg 
     
@@ -570,7 +573,7 @@ def regridAnlFcstFiles(arg):
     nVars = len(cubes)
     
     accumutationType = ['rain', 'precip', 'snow']
-    
+           
     # open for-loop-1 -- for all the variables in the cube
     for varName, varSTASH in varNamesSTASH:
         # define variable name constraint
@@ -656,13 +659,25 @@ def regridAnlFcstFiles(arg):
             outFn = os.path.join(_opPath_, outFn)
             print "Going to be save into ", outFn
                         
-            try:
+            try:                
+                # lock other threads / processors from being access same file 
+                # to write other variables
+                lock.acquire()
                 iris.save(regdCube, outFn, append=True)
+                # release the lock, let other threads/processors access this file.
+                lock.release()
             except iris.exceptions.TranslationError as e:
                 if str(e) == "The vertical-axis coordinate(s) ('soil_model_level_number') are not recognised or handled.":  
                     regdCube.remove_coord('soil_model_level_number') 
                     print "Removed soil_model_level_number from cube, due to error %s" % str(e)
+                    # create lock object
+                    lock = mp.Lock()
+                    # lock other threads / processors from being access same file 
+                    # to write other variables
+                    lock.acquire()
                     iris.save(regdCube, outFn, append=True)
+                    # release the lock, let other threads/processors access this file.
+                    lock.release()
                 else:
                     print "ALERT !!! Got error while saving, %s" % str(e)
                     print " So skipping this without saving data"
