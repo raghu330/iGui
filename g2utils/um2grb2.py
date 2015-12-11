@@ -570,10 +570,7 @@ def regridAnlFcstFiles(arg):
     nVars = len(cubes)
     
     accumutationType = ['rain', 'precip', 'snow']
-    
-    # create lock object
-    lock = mp.Lock()
-    
+           
     # open for-loop-1 -- for all the variables in the cube
     for varName, varSTASH in varNamesSTASH:
         # define variable name constraint
@@ -660,6 +657,8 @@ def regridAnlFcstFiles(arg):
             print "Going to be save into ", outFn
                         
             try:
+                # create lock object
+                lock = mp.Lock()
                 # lock other threads / processors from being access same file 
                 # to write other variables
                 lock.acquire()
@@ -670,6 +669,8 @@ def regridAnlFcstFiles(arg):
                 if str(e) == "The vertical-axis coordinate(s) ('soil_model_level_number') are not recognised or handled.":  
                     regdCube.remove_coord('soil_model_level_number') 
                     print "Removed soil_model_level_number from cube, due to error %s" % str(e)
+                    # create lock object
+                    lock = mp.Lock()
                     # lock other threads / processors from being access same file 
                     # to write other variables
                     lock.acquire()
@@ -687,7 +688,7 @@ def regridAnlFcstFiles(arg):
             # end of try:
             print "saved"
             # make memory free 
-            del regdCube
+            del regdCube, lock
             
             ## edit location section in grib2 to point to the right RMC
             # gribapi.grib_set(outFn,'centre','28')
