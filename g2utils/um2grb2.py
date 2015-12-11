@@ -752,8 +752,8 @@ def doShuffleVarsInOrder(fpath):
     gribmap = "/gpfs1/home/Libs/GNU/GRADS/grads-2.0.2.oga.1/Contents/gribmap"
     if 'um_ana' in newfilefpath:
         # create ctl & idx files for analysis file 
-        subprocess.call([g2ctl, 0, newfilefpath, '>', newfilefpath+'.ctl'])
-        subprocess.call([gribmap, 0, '-i', newfilefpath+'.ctl'])
+        subprocess.call([g2ctl, '-0', newfilefpath, '>', newfilefpath+'.ctl'])
+        subprocess.call([gribmap, '-0', '-i', newfilefpath+'.ctl'])
     elif 'um_prg' in newfilefpath:
         # create ctl & idx files for forecast file
         subprocess.call([g2ctl, newfilefpath, '>', newfilefpath+'.ctl'])
