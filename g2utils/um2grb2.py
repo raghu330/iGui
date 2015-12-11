@@ -110,7 +110,7 @@ _orderedVars_ = {'PressureLevel': [
 ('specific_humidity', 'm01s30i205'),   
 ('air_temperature', 'm01s16i203'),
 ('x_wind', 'm01s15i243'), 
-('y_wind', 'm01s15i244'),]
+('y_wind', 'm01s15i244')],
 
 ## Non Pressure Level Variable names & STASH codes
 'nonPressureLevel': [
@@ -130,7 +130,7 @@ _orderedVars_ = {'PressureLevel': [
 ('low_type_cloud_area_fraction', 'm01s09i203'), 
 ('x_wind', 'm01s03i209'), 
 ('y_wind', 'm01s03i210'),            
-('surface_altitude', 'm01s00i033')]
+('surface_altitude', 'm01s00i033')],
 }
 
 # create a class #1 for capturing stdin, stdout and stderr
